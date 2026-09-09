@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>네 개의 여름 — 해원동 이야기</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ctext y=%27.9em%27 font-size=%2756%27%3E%F0%9F%8C%85%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ 타이틀 ============ -->
+  <section class="screen active" id="screen-title">
+    <div class="title-wrap">
+      <p class="eyebrow">스토리형 선택지 게임</p>
+      <h1 class="logo">네 개의 여름</h1>
+      <p class="sub">같은 친구였지만 서로 다른 삶을 살았고, 결국 다시 만난다.</p>
+      <div class="job-strip" aria-hidden="true">
+        <span>👮</span><span>🚒</span><span>🪖</span><span>🩺</span>
+      </div>
+      <div class="btn-col">
+        <button class="btn primary" data-act="to-mode">게임 시작</button>
+        <button class="btn" data-act="continue" id="btn-continue" hidden>이어하기</button>
+        <button class="btn ghost" data-act="to-dex">엔딩 도감 <span id="dex-badge" class="badge">0</span></button>
+      </div>
+      <p class="foot">해원동 · 15년 전 여름의 목재창고</p>
+    </div>
+  </section>
+
+  <!-- ============ 모드 선택 ============ -->
+  <section class="screen" id="screen-mode">
+    <div class="panel">
+      <h2 class="h2">어떻게 플레이할까요?</h2>
+      <div class="cards">
+        <button class="card" data-mode="solo">
+          <div class="card-icon">🎧</div>
+          <div class="card-body">
+            <h3>혼자 플레이</h3>
+            <p>네 명 중 한 명을 골라 그 사람의 이야기를 끝까지. 나머지 세 사람은 이야기 속에서 만납니다.</p>
+          </div>
+        </button>
+        <button class="card" data-mode="hotseat">
+          <div class="card-icon">🛋️</div>
+          <div class="card-body">
+            <h3>친구들과 — 한 화면 (2~4인)</h3>
+            <p>기기 하나를 돌려가며 각자 다른 직업을 플레이. 앞사람의 선택이 뒷사람 이야기에 실제로 나타납니다. <b>서버 없이 바로 가능</b>.</p>
+          </div>
+        </button>
+        <button class="card" data-mode="online">
+          <div class="card-icon">🌐</div>
+          <div class="card-body">
+            <h3>친구들과 — 온라인 (2~4인)</h3>
+            <p>방 코드로 모여 각자 기기에서 동시에 플레이. 서로의 선택이 실시간으로 넘어갑니다. <span class="tag">서버 실행 필요</span></p>
+          </div>
+        </button>
+      </div>
+      <button class="btn ghost small" data-act="to-title">← 뒤로</button>
+    </div>
+  </section>
+
+  <!-- ============ 직업 선택 ============ -->
+  <section class="screen" id="screen-select">
+    <div class="panel">
+      <h2 class="h2" id="select-title">누구의 삶을 살아볼까요?</h2>
+      <p class="hint" id="select-hint">직업마다 완전히 다른 사건이 진행됩니다.</p>
+      <div class="jobs" id="job-list"></div>
+      <div class="row">
+        <label class="field">
+          <span>플레이어 이름</span>
+          <input type="text" id="player-name" maxlength="12" placeholder="예: 지민">
+        </label>
+      </div>
+      <div class="row" id="seat-row" hidden>
+        <div class="seats" id="seat-list"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn ghost small" data-act="to-mode">← 뒤로</button>
+        <button class="btn primary" id="btn-start" disabled>이야기 시작</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 온라인 로비 ============ -->
+  <section class="screen" id="screen-lobby">
+    <div class="panel">
+      <h2 class="h2">온라인 방</h2>
+      <div class="row two">
+        <label class="field"><span>서버 주소</span>
+          <input type="text" id="srv-url" placeholder="ws://localhost:3000"></label>
+        <label class="field"><span>방 코드</span>
+          <input type="text" id="srv-room" maxlength="8" placeholder="HAEWON"></label>
+      </div>
+      <div class="row two">
+        <label class="field"><span>내 이름</span>
+          <input type="text" id="srv-name" maxlength="12" placeholder="예: 지민"></label>
+        <div class="field">
+          <span>상태</span>
+          <div class="conn" id="conn-state">연결 안 됨</div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="btn-connect">방에 들어가기</button>
+      </div>
+      <hr class="rule">
+      <h3 class="h3">직업 고르기</h3>
+      <p class="hint">한 직업은 한 사람만 고를 수 있습니다.</p>
+      <div class="jobs compact" id="lobby-jobs"></div>
+      <div class="players" id="lobby-players"></div>
+      <div class="btn-row">
+        <button class="btn ghost small" data-act="to-mode">← 나가기</button>
+        <button class="btn primary" id="btn-ready" disabled>준비 완료</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 플레이 ============ -->
+  <section class="screen" id="screen-play">
+    <header class="hud">
+      <div class="hud-left">
+        <span class="who" id="hud-who">👮 경찰 · 이도현</span>
+        <span class="chapter" id="hud-chapter">1화</span>
+      </div>
+      <div class="hud-stats" id="hud-stats"></div>
+      <div class="hud-right">
+        <button class="icon-btn" id="btn-log" title="지금까지의 기록">📜</button>
+        <button class="icon-btn" id="btn-party" title="친구들">👥</button>
+        <button class="icon-btn" id="btn-save" title="저장">💾</button>
+        <button class="icon-btn" id="btn-quit" title="나가기">✕</button>
+      </div>
+      <div class="bar"><i id="hud-bar"></i></div>
+    </header>
+
+    <main class="stage" id="stage">
+      <div class="place" id="scene-place"></div>
+      <div class="script" id="script"></div>
+      <div class="tap-hint" id="tap-hint">화면을 누르거나 <b>Space</b></div>
+      <div class="choices" id="choices"></div>
+    </main>
+
+    <aside class="drawer" id="drawer">
+      <div class="drawer-head">
+        <strong id="drawer-title">친구들</strong>
+        <button class="icon-btn" id="btn-drawer-close">✕</button>
+      </div>
+      <div class="drawer-body" id="drawer-body"></div>
+      <div class="chat-box" id="chat-box" hidden>
+        <input type="text" id="chat-input" maxlength="80" placeholder="한마디 보내기…">
+        <button class="btn small" id="chat-send">전송</button>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ============ 엔딩 ============ -->
+  <section class="screen" id="screen-ending">
+    <div class="ending-wrap">
+      <p class="eyebrow" id="ending-kind">엔딩</p>
+      <h2 class="ending-title" id="ending-title"></h2>
+      <div class="script wide" id="ending-script"></div>
+      <div class="result" id="ending-result"></div>
+      <div class="btn-row center">
+        <button class="btn" id="btn-next-seat" hidden>다음 친구 차례 →</button>
+        <button class="btn primary" data-act="to-title">처음으로</button>
+        <button class="btn ghost" data-act="to-dex">엔딩 도감</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 엔딩 도감 ============ -->
+  <section class="screen" id="screen-dex">
+    <div class="panel">
+      <h2 class="h2">엔딩 도감</h2>
+      <p class="hint">직업 4개 × 엔딩 4종 = 16칸. 숨겨진 진엔딩은 마지막에 <b>넷이 함께 찾아가는 선택</b>을 하고 <b>유대 20 · 기억 조각 8개</b>를 넘겼을 때 열립니다.</p>
+      <div class="dex" id="dex-grid"></div>
+      <div class="btn-row">
+        <button class="btn ghost small" data-act="to-title">← 처음으로</button>
+        <button class="btn ghost small" id="btn-reset-dex">도감 초기화</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<script src="js/engine.js"></script>
+<script src="js/story/index.js"></script>
+<script src="js/story/common.js"></script>
+<script src="js/story/police.js"></script>
+<script src="js/story/fire.js"></script>
+<script src="js/story/army.js"></script>
+<script src="js/story/doctor.js"></script>
+<script src="js/save.js"></script>
+<script src="js/net.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
