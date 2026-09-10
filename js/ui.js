@@ -78,6 +78,47 @@
     }).join('');
   };
 
+  /* --- 무대 세우기 ------------------------------------------- */
+  var lastSetKey = null;
+
+  function buildStage(sc) {
+    var setEl = $('scene-set');
+    var view = Cast.backdrop(sc);
+    var key = (view.pal || '') + '|' + (view.seed || 0);
+
+    if (key !== lastSetKey) {                 // 같은 무대면 다시 그리지 않는다
+      lastSetKey = key;
+      setEl.classList.remove('on');
+      setEl.innerHTML = Stage.draw(view);
+      requestAnimationFrame(function () { setEl.classList.add('on'); });
+    } else {
+      setEl.classList.add('on');
+    }
+
+    var host = $('actors');
+    host.innerHTML = '';
+    var cast = Cast.speakers(sc);
+    host.dataset.n = cast.length;             /* 인원에 따라 크기를 줄인다 */
+    cast.forEach(function (p, i) {
+      var d = document.createElement('div');
+      d.className = 'actor idle';
+      d.dataset.who = p.key;
+      d.style.animationDelay = (i * 120) + 'ms';
+      d.innerHTML = Cast.figure(p.key) +
+        '<span class="tag">' + UI.esc(p.name) + '</span>';
+      host.appendChild(d);
+    });
+  }
+
+  /** 지금 말하는 사람만 앞으로 나오게 한다 */
+  UI.spotlight = function (whoKey) {
+    Array.prototype.forEach.call($('actors').children, function (el) {
+      var mine = whoKey && el.dataset.who === whoKey;
+      el.classList.toggle('speaking', !!mine);
+      el.classList.toggle('idle', !mine);
+    });
+  };
+
   /* --- 장면: 한 줄씩 드러내기 -------------------------------- */
   UI.renderScene = function (state, handlers) {
     var sc = Engine.scene(state);
@@ -86,6 +127,7 @@
     $('choices').innerHTML = '';
     var script = $('script');
     script.innerHTML = '';
+    buildStage(sc);
 
     UI._reveal = {
       lines: (sc.text || []).slice(),
@@ -107,15 +149,28 @@
       return;
     }
     var raw = r.lines[r.i++];
+    var script = $('script');
+
+    /* 지나간 줄은 뒤로 물린다 — 지금 읽는 줄이 어디인지 보이게 */
+    Array.prototype.forEach.call(script.children, function (el) {
+      el.classList.add('past'); el.classList.remove('now');
+    });
+
     var p = document.createElement('p');
+    p.classList.add('now');
     if (Array.isArray(raw)) {
-      p.className = 'talk';
+      p.classList.add('talk');
       p.innerHTML = '<span class="nm">' + UI.esc(raw[0]) + '</span>' + UI.esc(raw[1]);
+      UI.spotlight(Cast.who(raw[0]));
+      if (global.Sfx) Sfx.play('click', { volume: .35 });
     } else {
-      p.className = 'line';
+      p.classList.add('line');
       p.textContent = raw;
+      UI.spotlight(null);                      /* 지문에서는 아무도 말하지 않는다 */
     }
-    $('script').appendChild(p);
+    script.appendChild(p);
+    while (script.children.length > 2) script.removeChild(script.firstChild);
+
     if (r.i >= r.lines.length) {
       r.finished = true;
       $('tap-hint').hidden = true;
@@ -191,6 +246,11 @@
   UI.renderEnding = function (state, extraHtml) {
     var sc = Engine.scene(state);
     UI.mood('screen-ending', sc.mood);
+    var bg = $('ending-set');
+    if (bg) {
+      bg.innerHTML = Stage.draw(Cast.backdrop(sc));
+      bg.classList.add('on');
+    }
     $('ending-kind').textContent = ENDING_LABEL[state.ending] || '엔딩';
     $('ending-title').textContent = sc.title || '';
     $('ending-script').innerHTML = (sc.text || []).map(function (raw) {
@@ -253,6 +313,7 @@
 
     $('explore').hidden = false;
     $('stage').hidden = true;
+    lastSetKey = null;             /* 돌아오면 무대를 다시 세운다 */
     $('observe').hidden = true;
 
     /* 무대 */

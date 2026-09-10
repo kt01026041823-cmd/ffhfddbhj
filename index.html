@@ -151,10 +151,14 @@
     </div>
 
     <main class="stage" id="stage">
-      <div class="place" id="scene-place"></div>
-      <div class="script" id="script"></div>
-      <div class="tap-hint" id="tap-hint">화면을 누르거나 <b>Space</b></div>
-      <div class="choices" id="choices"></div>
+      <div class="scene-set" id="scene-set"></div>
+      <div class="actors" id="actors"></div>
+      <div class="script-panel">
+        <div class="place" id="scene-place"></div>
+        <div class="script" id="script"></div>
+        <div class="tap-hint" id="tap-hint">화면을 누르거나 <b>Space</b></div>
+        <div class="choices" id="choices"></div>
+      </div>
     </main>
 
     <aside class="drawer" id="drawer">
@@ -172,6 +176,7 @@
 
   <!-- ============ 엔딩 ============ -->
   <section class="screen" id="screen-ending">
+    <div class="scene-set" id="ending-set"></div>
     <div class="ending-wrap">
       <p class="eyebrow" id="ending-kind">엔딩</p>
       <h2 class="ending-title" id="ending-title"></h2>
@@ -211,6 +216,7 @@
 
 <script src="js/audio.js"></script>
 <script src="js/set.js"></script>
+<script src="js/cast.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/story/index.js"></script>
 <script src="js/story/docs.js"></script>

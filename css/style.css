@@ -493,3 +493,129 @@ kbd{
   0%{transform:translate(0,0)} 33%{transform:translate(-2px,1px)} 66%{transform:translate(1px,-2px)}
   100%{transform:translate(0,0)}
 }
+
+/* =========================================================
+ *  대사 장면의 무대 — 배경 + 인물이 서고, 말하는 사람이 앞으로
+ * ========================================================= */
+.stage{position:relative; display:flex; flex-direction:column; min-height:calc(100vh - 120px)}
+
+/* 배경: 아주 느리게 숨 쉰다 */
+.scene-set{
+  position:absolute; inset:-3% -5%; z-index:0; pointer-events:none;
+  opacity:0; transition:opacity .9s ease;
+}
+.scene-set.on{opacity:1}
+.scene-set .set{width:100%; height:100%; display:block}
+.scene-set .lay{transform-origin:50% 60%}
+.scene-set .back{animation:drift 34s ease-in-out infinite}
+.scene-set .mid {animation:drift 26s ease-in-out infinite reverse}
+.scene-set .fore{animation:drift 20s ease-in-out infinite}
+@keyframes drift{
+  0%,100%{transform:translate3d(0,0,0) scale(1)}
+  50%    {transform:translate3d(-14px,-6px,0) scale(1.012)}
+}
+/* 배경 위로 깔리는 어둠 — 글씨가 읽히도록 */
+.stage::before{
+  content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(180deg,rgba(8,10,15,.35) 0%,rgba(8,10,15,.62) 46%,rgba(8,10,15,.93) 100%);
+}
+
+/* 인물 — 패널 위 공간을 통째로 쓴다 */
+.actors{
+  position:relative; z-index:2; flex:1 1 auto;
+  min-height:200px; padding:18px 12px 4px; overflow:hidden;
+  display:flex; justify-content:center; align-items:flex-end; gap:min(6vw,80px);
+  pointer-events:none;
+}
+.actors[data-n="3"]{gap:min(4vw,56px)}
+.actors[data-n="3"] .actor{height:clamp(160px, 38vh, 380px)}
+.actors[data-n="4"]{gap:min(3vw,40px)}
+.actors[data-n="4"] .actor{height:clamp(140px, 33vh, 330px)}
+.actor{
+  position:relative; flex:0 0 auto;
+  height:clamp(180px, 44vh, 430px);       /* 부모가 아니라 스스로 키를 정한다 */
+  opacity:0; transform:translateY(26px);
+  animation:actorIn .7s cubic-bezier(.22,.61,.36,1) forwards;
+  transition:filter .45s ease, opacity .45s ease;
+}
+.actor .fig{height:100%; width:auto; display:block; overflow:visible}
+@keyframes actorIn{to{opacity:1; transform:translateY(0)}}
+
+/* 가만히 있어도 숨은 쉰다 */
+.actor .fig{animation:breathe 4.6s ease-in-out infinite}
+.actor:nth-child(2) .fig{animation-duration:5.3s; animation-delay:-1.2s}
+.actor:nth-child(3) .fig{animation-duration:4.1s; animation-delay:-2.4s}
+.actor:nth-child(4) .fig{animation-duration:5.8s; animation-delay:-.7s}
+@keyframes breathe{
+  0%,100%{transform:translateY(0) scaleY(1)}
+  50%    {transform:translateY(-4px) scaleY(1.006)}
+}
+
+/* 듣는 사람은 뒤로 물러난다 */
+.actor.idle{opacity:.42; filter:brightness(.55) blur(1.2px); transform:scale(.94)}
+/* 말하는 사람은 앞으로 */
+.actor.speaking{opacity:1; filter:brightness(1.18) drop-shadow(0 0 26px rgba(224,178,106,.28)); z-index:3}
+.actor.speaking .fig{animation:speak 2.6s ease-in-out infinite}
+@keyframes speak{
+  0%,100%{transform:translateY(-6px) scale(1.035)}
+  50%    {transform:translateY(-10px) scale(1.042)}
+}
+.actor .tag{
+  position:absolute; left:50%; bottom:-4px; transform:translateX(-50%);
+  font-size:.7rem; letter-spacing:.1em; color:var(--ink-dim);
+  white-space:nowrap; opacity:0; transition:opacity .35s ease;
+}
+.actor.speaking .tag{opacity:.85; color:var(--accent)}
+
+/* 대사 패널 — 무대 앞에 걸린 유리판 */
+.script-panel{
+  position:relative; z-index:4; margin-top:auto;
+  max-width:680px; width:100%; margin-left:auto; margin-right:auto;
+  background:linear-gradient(180deg,rgba(10,13,19,.30),rgba(10,13,19,.72));
+  border-top:1px solid rgba(255,255,255,.09);
+  border-radius:18px 18px 0 0;
+  padding:18px 20px 26px;
+  backdrop-filter:blur(7px);
+  animation:panelIn .55s ease both;
+}
+@keyframes panelIn{from{opacity:0; transform:translateY(14px)}to{opacity:1; transform:none}}
+.script-panel{flex:0 0 auto}
+.script-panel .place{margin-top:0}
+.script-panel .script{min-height:4.4em}
+.script .talk{transition:opacity .4s ease}
+.script .talk.past{opacity:.5}
+.script .line.past{opacity:.45}
+.script p.now{animation:rise .5s ease both}
+
+@media (max-width:640px){
+  .actors{min-height:150px; gap:7vw; padding-top:8px}
+  .script-panel{padding:14px 15px 22px; border-radius:14px 14px 0 0}
+  .script-panel .script{min-height:6.4em}
+}
+@media (prefers-reduced-motion:reduce){
+  .scene-set .lay, .actor .fig{animation:none !important}
+}
+
+/* 엔딩에도 같은 무대를 깔되, 글은 앞에 */
+#screen-ending{position:relative}
+#ending-set{position:absolute; inset:-3% -5%; z-index:0}
+#screen-ending::before{
+  content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(180deg,rgba(8,10,15,.72),rgba(8,10,15,.94));
+}
+.ending-wrap{position:relative; z-index:2}
+
+/* 말하는 사람 뒤에서 빛이 든다 — 실루엣이 배경에 묻히지 않게 */
+.actor::before{
+  content:""; position:absolute; left:50%; bottom:6%; width:150%; height:80%;
+  transform:translateX(-50%); z-index:-1; opacity:0; transition:opacity .5s ease;
+  background:radial-gradient(closest-side, rgba(224,178,106,.20), transparent 72%);
+}
+.actor.speaking::before{opacity:1}
+
+/* 인물이 선 자리에 바닥빛 — 실루엣이 배경에서 떠 보이게 */
+.actors::before{
+  content:""; position:absolute; left:50%; bottom:0; transform:translateX(-50%);
+  width:min(1100px,96%); height:62%; z-index:-1; pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 100%, rgba(160,180,220,.13), transparent 70%);
+}
