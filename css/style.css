@@ -120,7 +120,9 @@ body{
 }
 .job::after{content:"";position:absolute;inset:auto 0 0 0;height:3px;background:var(--c);opacity:.5}
 .job:hover{transform:translateY(-2px);background:rgba(255,255,255,.09)}
-.job.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+/* background 단축 속성을 쓰면 background-size(contain)까지 초기화돼서
+   고른 카드만 이미지가 원본 크기로 확대된다. background-color 로만 칠한다 */
+.job.sel{border-color:var(--c); background-color:color-mix(in srgb,var(--c) 14%,#0c0f16)}
 .job.taken{opacity:.4;cursor:not-allowed}
 .job .ic{font-size:1.7rem;display:block}
 .job .jb{font-weight:700;margin-top:8px}
@@ -652,6 +654,7 @@ kbd{
 .job .tg{padding:0 14px 14px}
 .job:hover{filter:grayscale(0) brightness(.92); transform:translateY(-3px)}
 .job.sel{
+  background-size:contain; background-position:50% 0; background-repeat:no-repeat;
   filter:none;                                   /* 고른 사람만 제 색으로 */
   border-color:var(--c);
   box-shadow:0 0 0 1px var(--c), 0 14px 40px rgba(0,0,0,.55);
@@ -836,7 +839,7 @@ kbd{
   font-family:inherit; color:var(--ink-dim); transition:.2s;
 }
 .gcard .gfig{height:min(44vh,360px); overflow:hidden; background:#0c0f16}
-.gcard .gfig img{width:100%; height:100%; object-fit:cover; object-position:50% 14%; display:block}
+.gcard .gfig img{width:100%; height:100%; object-fit:contain; object-position:50% 50%; display:block}
 .gcard .gfig svg{height:100%; width:auto; margin:0 auto; display:block}
 .gcard span{display:block; font-size:1rem; letter-spacing:.08em}
 .gcard:hover{background:rgba(255,255,255,.07); color:var(--ink)}
