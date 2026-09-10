@@ -42,6 +42,12 @@
     },
     resetDex: function () { try { global.localStorage.removeItem(KEY_DEX); } catch (e) {} },
 
+    /* 고른 성별 기억 */
+    gender: function (v) {
+      if (v === undefined) return read('hw_gender_v1', 'm');
+      write('hw_gender_v1', v); return v;
+    },
+
     /* 플레이어 이름 기억 */
     name: function (v) {
       if (v === undefined) return read(KEY_NAME, '');

@@ -48,6 +48,7 @@
       var b = document.createElement('button');
       b.className = 'job' + (opt.selected === key ? ' sel' : '') + (taken ? ' taken' : '');
       b.style.setProperty('--c', j.color);
+      if (global.Art && Art.sel[key]) b.style.backgroundImage = 'url(' + Art.sel[key] + ')';
       b.type = 'button';
       b.innerHTML =
         '<span class="ic">' + j.icon + '</span>' +
@@ -110,6 +111,32 @@
     });
   }
 
+  /** 탐색 화면에 다녀오면 무대를 다시 세운다 */
+  UI.resetStage = function () { lastSetKey = null; };
+
+  /* 나 말고 세 친구는 이 모습으로 나온다 */
+  var DEFAULT_G = { police: 'm', fire: 'm', army: 'm', doctor: 'f' };
+
+  /** 말하는 사람의 초상화 — 네 친구는 그림이 있다 */
+  UI.showPortrait = function (whoKey, name, state) {
+    var el = $('portrait');
+    if (!el) return;
+    var art = global.Art && Art.bust[whoKey];
+    if (!art) { el.classList.remove('on'); el.hidden = true; return; }
+    var g = (state && whoKey === state.route && state.gender) || DEFAULT_G[whoKey] || 'm';
+    var src = art[g] || art.m;
+    if (el.dataset.src !== whoKey + g) {
+      el.dataset.src = whoKey + g;
+      el.innerHTML = '<img alt="" src="' + src + '"><figcaption>' + UI.esc(name || '') + '</figcaption>';
+    } else {
+      var cap = el.querySelector('figcaption');
+      if (cap) cap.textContent = name || '';
+    }
+    el.style.setProperty('--pc', Cast.look(whoKey).rim);
+    el.hidden = false;
+    requestAnimationFrame(function () { el.classList.add('on'); });
+  };
+
   /** 지금 말하는 사람만 앞으로 나오게 한다 */
   UI.spotlight = function (whoKey) {
     Array.prototype.forEach.call($('actors').children, function (el) {
@@ -161,12 +188,16 @@
     if (Array.isArray(raw)) {
       p.classList.add('talk');
       p.innerHTML = '<span class="nm">' + UI.esc(raw[0]) + '</span>' + UI.esc(raw[1]);
-      UI.spotlight(Cast.who(raw[0]));
+      var who = Cast.who(raw[0]);
+      UI.spotlight(who);
+      UI.showPortrait(who, raw[0], r.state);
       if (global.Sfx) Sfx.play('click', { volume: .35 });
     } else {
       p.classList.add('line');
       p.textContent = raw;
       UI.spotlight(null);                      /* 지문에서는 아무도 말하지 않는다 */
+      var pf = $('portrait');
+      if (pf) pf.classList.remove('on');
     }
     script.appendChild(p);
     while (script.children.length > 2) script.removeChild(script.firstChild);
@@ -313,7 +344,7 @@
 
     $('explore').hidden = false;
     $('stage').hidden = true;
-    lastSetKey = null;             /* 돌아오면 무대를 다시 세운다 */
+    UI.resetStage();               /* 돌아오면 무대를 다시 세운다 */
     $('observe').hidden = true;
 
     /* 무대 */

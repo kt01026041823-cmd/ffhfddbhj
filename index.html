@@ -66,6 +66,13 @@
       <h2 class="h2" id="select-title">누구의 삶을 살아볼까요?</h2>
       <p class="hint" id="select-hint">직업마다 완전히 다른 사건이 진행됩니다.</p>
       <div class="jobs" id="job-list"></div>
+      <div class="row" id="gender-row" hidden>
+        <span class="field-label">성별</span>
+        <div class="gender" id="gender-pick">
+          <button type="button" class="gbtn" data-g="m">남</button>
+          <button type="button" class="gbtn" data-g="f">여</button>
+        </div>
+      </div>
       <div class="row">
         <label class="field">
           <span>플레이어 이름</span>
@@ -154,6 +161,7 @@
       <div class="scene-set" id="scene-set"></div>
       <div class="actors" id="actors"></div>
       <div class="script-panel">
+        <figure class="portrait" id="portrait" hidden></figure>
         <div class="place" id="scene-place"></div>
         <div class="script" id="script"></div>
         <div class="tap-hint" id="tap-hint">화면을 누르거나 <b>Space</b></div>
@@ -217,6 +225,7 @@
 <script src="js/audio.js"></script>
 <script src="js/set.js"></script>
 <script src="js/cast.js"></script>
+<script src="js/portraits.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/story/index.js"></script>
 <script src="js/story/docs.js"></script>

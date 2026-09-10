@@ -53,7 +53,7 @@
   function toMode() { UI.mood('screen-mode', 'night'); UI.show('screen-mode'); }
 
   /* --- 직업/좌석 선택 화면 ------------------------------- */
-  var sel = { route: null };
+  var sel = { route: null, gender: 'm' };
 
   function toSelect(mode) {
     Game.mode = mode;
@@ -65,6 +65,9 @@
       $('select-hint').innerHTML = '직업마다 완전히 다른 사건이 진행됩니다. 나머지 세 사람은 이야기 속에서 만나게 됩니다.';
       $('job-list').hidden = false;
       $('seat-row').hidden = true;
+      sel.gender = Save.gender() || 'm';
+      drawGender();
+      $('gender-row').hidden = true;
       drawSoloJobs();
       $('btn-start').disabled = true;
     } else {
@@ -72,6 +75,7 @@
       $('select-hint').innerHTML = '기기 하나를 돌려가며 순서대로 플레이합니다. <b>앞사람이 만든 흔적이 뒷사람 이야기에 실제로 등장합니다.</b>';
       $('job-list').hidden = true;
       $('seat-row').hidden = false;
+      $('gender-row').hidden = true;
       renderSeatPicker();
     }
     UI.mood('screen-select', 'summer');
@@ -84,10 +88,27 @@
       onPick: function (k) {
         sel.route = k;
         drawSoloJobs();
+        $('gender-row').hidden = false;
         $('btn-start').disabled = false;
+        if (global.Sfx) Sfx.play('click');
       }
     });
   }
+
+  function drawGender() {
+    Array.prototype.forEach.call($('gender-pick').children, function (b) {
+      b.classList.toggle('on', b.dataset.g === sel.gender);
+    });
+  }
+
+  $('gender-pick').addEventListener('click', function (e) {
+    var b = e.target.closest('.gbtn');
+    if (!b) return;
+    sel.gender = b.dataset.g;
+    Save.gender(sel.gender);
+    drawGender();
+    if (global.Sfx) Sfx.play('click');
+  });
 
   var seatPickerWired = false;
   function renderSeatPicker() {
@@ -105,7 +126,8 @@
             var j = Engine.JOBS[k];
             return '<option value="' + k + '">' + j.icon + ' ' + j.job + '</option>';
           }).join('') +
-        '</select>';
+        '</select>' +
+        '<select class="gsel" data-g="' + i + '"><option value="m">남</option><option value="f">여</option></select>';
       host.appendChild(row);
     }
     if (!seatPickerWired) {
@@ -121,10 +143,11 @@
     Array.prototype.forEach.call($('seat-list').querySelectorAll('.seat'), function (row, i) {
       var name = row.querySelector('input').value.trim();
       var route = row.querySelector('select').value;
+      var g = (row.querySelector('.gsel') || {}).value || 'm';
       if (!route) return;
       if (used[route]) dup = true;
       used[route] = true;
-      out.push({ name: name || ('플레이어' + (i + 1)), route: route });
+      out.push({ name: name || ('플레이어' + (i + 1)), route: route, gender: g });
     });
     return { seats: out, dup: dup };
   }
@@ -143,7 +166,8 @@
     Game.mode = 'solo';
     Game.world = {};
     Game.cur = 0;
-    Game.seats = [{ name: name, route: sel.route, state: Engine.newState(sel.route, name), done: false }];
+    Game.seats = [{ name: name, route: sel.route,
+                    state: Engine.newState(sel.route, name, sel.gender), done: false }];
     beginSeat();
   }
 
@@ -153,7 +177,8 @@
     Game.world = {};
     Game.cur = 0;
     Game.seats = r.seats.map(function (s) {
-      return { name: s.name, route: s.route, state: Engine.newState(s.route, s.name), done: false };
+      return { name: s.name, route: s.route,
+               state: Engine.newState(s.route, s.name, s.gender || 'm'), done: false };
     });
     beginSeat();
   }
@@ -527,7 +552,8 @@
     (Game.party.players || []).forEach(function (p) { if (p.id === Game.me) me = p; });
     if (!me || !me.route) { UI.toast('직업을 먼저 고르세요.'); return; }
     Game.cur = 0;
-    Game.seats = [{ name: me.name, route: me.route, state: Engine.newState(me.route, me.name), done: false }];
+    Game.seats = [{ name: me.name, route: me.route,
+                    state: Engine.newState(me.route, me.name, Save.gender() || 'm'), done: false }];
     Game.world = {};
     prevStats = null;
     UI.show('screen-play');
@@ -538,6 +564,13 @@
   /* =======================================================
    *  이벤트 배선
    * ===================================================== */
+  /* 버튼을 누른 뒤 포커스를 남기지 않는다 —
+     그대로 두면 Space로 대사를 넘길 때 그 버튼이 다시 눌린다 */
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (btn) setTimeout(function () { btn.blur(); }, 0);
+  }, true);
+
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-act],[data-mode]');
     if (!t) return;

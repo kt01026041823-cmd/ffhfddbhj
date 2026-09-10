@@ -35,13 +35,14 @@
   Engine.PROLOGUE = 'pro_1';
 
   /* 상태 생성 -------------------------------------------------- */
-  Engine.newState = function (routeKey, seatName) {
+  Engine.newState = function (routeKey, seatName, gender) {
     var job = Engine.JOBS[routeKey];
     if (!job) throw new Error('unknown route: ' + routeKey);
     return {
       v: 1,
       route: routeKey,
       seat: seatName || job.name,   // 멀티에서 이 좌석을 쥔 사람의 표시 이름
+      gender: gender === 'f' ? 'f' : 'm',   // 초상화에만 쓴다
       scene: Engine.PROLOGUE,
       stats: { bond: 0, faith: 0, scar: 0, memory: 0 },
       flags: {},                    // 내 루트 안에서만 쓰는 플래그
