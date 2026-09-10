@@ -41,6 +41,11 @@
    *  화면 이동
    * ===================================================== */
   function toTitle() {
+    var ta = $('title-art');
+    if (ta && global.Art && Art.scene.title) {
+      ta.style.backgroundImage = 'url(' + Art.scene.title + ')';
+    }
+    UI.resetChapter();
     UI.hideLook();
     Ambience.stop();
     UI.mood('screen-title', 'night');

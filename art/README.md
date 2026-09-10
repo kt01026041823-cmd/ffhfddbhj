@@ -1,6 +1,13 @@
 # 원본 아트
 
-`character-sheet.png` — 플레이어가 제공한 캐릭터 시트 (경찰 · 소방관 · 군인 · 의사 × 남/여).
+플레이어가 제공한 그림들. 게임에 들어가는 이미지는 여기서 잘라
+`js/portraits.js` 에 data URI 로 박아 넣는다.
 
-게임에 들어가는 이미지는 이 파일에서 잘라 `js/portraits.js` 에 data URI 로 박아 넣는다.
-다시 만들려면 `tools/make-portraits.py` 를 실행한다.
+| 파일 | 쓰임 |
+|---|---|
+| `closeups.png` | 대사할 때 뜨는 클로즈업 8장 (직업 4 × 남/여) |
+| `character-sheet.png` | 직업 고를 때의 전신 4장 |
+| `storyboard.png` | 타이틀 · 고등학교 시절 · 재회 장면 아트 |
+
+`storyboard.png` 는 연출의 기준이기도 하다 —
+풀화면 장면 아트 위에 클로즈업이 들어오고, 그 위에 선택지가 뜨는 형태.

@@ -82,7 +82,25 @@
   /* --- 무대 세우기 ------------------------------------------- */
   var lastSetKey = null;
 
+  /* 실제 그림이 있는 장면은 그림을 깐다 */
+  var SCENE_ART = {
+    pro_1: 'school', pro_3: 'school',
+    re_2: 'reunion', re_4: 'reunion',
+    ending_true: 'reunion', ending_happy: 'reunion', ending_normal: 'title', ending_sad: 'title'
+  };
+
   function buildStage(sc) {
+    var art = $('scene-art');
+    var pick = SCENE_ART[sc.id];
+    if (art) {
+      if (pick && global.Art && Art.scene[pick]) {
+        art.style.backgroundImage = 'url(' + Art.scene[pick] + ')';
+        art.classList.add('on');
+      } else {
+        art.classList.remove('on');
+      }
+    }
+
     var setEl = $('scene-set');
     var view = Cast.backdrop(sc);
     var key = (view.pal || '') + '|' + (view.seed || 0);
@@ -98,6 +116,11 @@
 
     var host = $('actors');
     host.innerHTML = '';
+    if (pick) {                    /* 그림이 있는 장면은 실루엣 없이 그림으로 */
+      host.dataset.n = 0;
+      setEl.classList.remove('on');
+      return;
+    }
     var cast = Cast.speakers(sc);
     host.dataset.n = cast.length;             /* 인원에 따라 크기를 줄인다 */
     cast.forEach(function (p, i) {
@@ -119,22 +142,30 @@
 
   /** 말하는 사람의 초상화 — 네 친구는 그림이 있다 */
   UI.showPortrait = function (whoKey, name, state) {
-    var el = $('portrait');
+    var el = $('closeup');
     if (!el) return;
     var art = global.Art && Art.bust[whoKey];
-    if (!art) { el.classList.remove('on'); el.hidden = true; return; }
+    if (!art) { UI.hideCloseup(); return; }
+
     var g = (state && whoKey === state.route && state.gender) || DEFAULT_G[whoKey] || 'm';
-    var src = art[g] || art.m;
-    if (el.dataset.src !== whoKey + g) {
-      el.dataset.src = whoKey + g;
-      el.innerHTML = '<img alt="" src="' + src + '"><figcaption>' + UI.esc(name || '') + '</figcaption>';
-    } else {
-      var cap = el.querySelector('figcaption');
-      if (cap) cap.textContent = name || '';
+    var key = whoKey + g;
+    if (el.dataset.src !== key) {
+      el.dataset.src = key;
+      el.classList.remove('on');                 /* 다른 사람으로 바뀌면 다시 밀려든다 */
+      el.style.backgroundImage = 'url(' + (art[g] || art.m) + ')';
+      el.style.setProperty('--cc', Cast.look(whoKey).rim);
     }
-    el.style.setProperty('--pc', Cast.look(whoKey).rim);
     el.hidden = false;
+    $('actors').classList.add('hushed');
     requestAnimationFrame(function () { el.classList.add('on'); });
+  };
+
+  UI.hideCloseup = function () {
+    var el = $('closeup');
+    if (!el) return;
+    el.classList.remove('on');
+    el.dataset.src = '';
+    $('actors').classList.remove('hushed');
   };
 
   /** 지금 말하는 사람만 앞으로 나오게 한다 */
@@ -146,14 +177,38 @@
     });
   };
 
+  /* --- 챕터 전환 카드 ---------------------------------------- */
+  var lastChapter = null;
+  UI.chapterCard = function (sc, force) {
+    var card = $('chapter-card');
+    if (!card || !sc.chapter) return false;
+    if (!force && sc.chapter === lastChapter) return false;
+    lastChapter = sc.chapter;
+
+    var parts = sc.chapter.split('·');
+    $('cc-eyebrow').textContent = (parts[0] || '').trim();
+    $('cc-title').textContent = (parts[1] || parts[0] || '').trim();
+    $('cc-place').textContent = sc.place || '';
+    card.hidden = false;
+    card.style.animation = 'none';
+    void card.offsetWidth;                    /* 애니메이션 다시 돌리기 */
+    card.style.animation = '';
+    clearTimeout(UI._cc);
+    UI._cc = setTimeout(function () { card.hidden = true; }, 2400);
+    return true;
+  };
+  UI.resetChapter = function () { lastChapter = null; };
+
   /* --- 장면: 한 줄씩 드러내기 -------------------------------- */
   UI.renderScene = function (state, handlers) {
     var sc = Engine.scene(state);
+    UI.chapterCard(sc);
     UI.mood('screen-play', sc.mood);
     $('scene-place').textContent = sc.place || '';
     $('choices').innerHTML = '';
     var script = $('script');
     script.innerHTML = '';
+    UI.hideCloseup();
     buildStage(sc);
 
     UI._reveal = {
@@ -196,8 +251,7 @@
       p.classList.add('line');
       p.textContent = raw;
       UI.spotlight(null);                      /* 지문에서는 아무도 말하지 않는다 */
-      var pf = $('portrait');
-      if (pf) pf.classList.remove('on');
+      UI.hideCloseup();
     }
     script.appendChild(p);
     while (script.children.length > 2) script.removeChild(script.firstChild);
@@ -279,7 +333,13 @@
     UI.mood('screen-ending', sc.mood);
     var bg = $('ending-set');
     if (bg) {
-      bg.innerHTML = Stage.draw(Cast.backdrop(sc));
+      var pick = SCENE_ART[sc.id];
+      if (pick && global.Art && Art.scene[pick]) {
+        bg.innerHTML = '<div class="scene-art on" style="background-image:url(' +
+                       Art.scene[pick] + ')"></div>';
+      } else {
+        bg.innerHTML = Stage.draw(Cast.backdrop(sc));
+      }
       bg.classList.add('on');
     }
     $('ending-kind').textContent = ENDING_LABEL[state.ending] || '엔딩';
@@ -345,6 +405,7 @@
     $('explore').hidden = false;
     $('stage').hidden = true;
     UI.resetStage();               /* 돌아오면 무대를 다시 세운다 */
+    UI.chapterCard(sc);
     $('observe').hidden = true;
 
     /* 무대 */

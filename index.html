@@ -13,6 +13,7 @@
 
   <!-- ============ 타이틀 ============ -->
   <section class="screen active" id="screen-title">
+    <div class="title-art" id="title-art"></div>
     <div class="title-wrap">
       <p class="eyebrow">스토리형 선택지 게임</p>
       <h1 class="logo">네 개의 여름</h1>
@@ -159,9 +160,10 @@
 
     <main class="stage" id="stage">
       <div class="scene-set" id="scene-set"></div>
+      <div class="scene-art" id="scene-art"></div>
       <div class="actors" id="actors"></div>
+      <div class="closeup" id="closeup" hidden></div>
       <div class="script-panel">
-        <figure class="portrait" id="portrait" hidden></figure>
         <div class="place" id="scene-place"></div>
         <div class="script" id="script"></div>
         <div class="tap-hint" id="tap-hint">화면을 누르거나 <b>Space</b></div>
@@ -216,6 +218,14 @@
     <article class="paper" id="paper"></article>
     <div class="doc-actions">
       <button class="btn small" id="doc-close">덮는다 &nbsp;<kbd>Esc</kbd></button>
+    </div>
+  </div>
+
+  <div class="chapter-card" id="chapter-card" hidden>
+    <div class="cc-inner">
+      <span class="cc-eyebrow" id="cc-eyebrow"></span>
+      <h2 class="cc-title" id="cc-title"></h2>
+      <span class="cc-place" id="cc-place"></span>
     </div>
   </div>
 
