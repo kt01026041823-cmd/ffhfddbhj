@@ -60,31 +60,82 @@
   /* --- 직업/좌석 선택 화면 ------------------------------- */
   var sel = { route: null, gender: 'm' };
 
+  /* 직업마다 한 줄씩 — 성별 고를 때 보여준다 */
+  var JOB_QUOTE = {
+    police: '“정의는, 반드시 지켜야 하니까.”',
+    fire:   '“사람을 구하는 게 내가 살아가는 이유야.”',
+    army:   '“내가 지키는 사람들, 그게 내 책임이니까.”',
+    doctor: '“사람을 살리는 일, 그게 내가 선택한 길이니까.”'
+  };
+  var NAME_IDEAS = ['지민', '서연', '하준', '수아', '도윤', '예린'];
+
+  var step = 1;
+
   function toSelect(mode) {
     Game.mode = mode;
     sel.route = null;
+    sel.gender = Save.gender() || 'm';
     $('player-name').value = Save.name() || '';
 
     if (mode === 'solo') {
-      $('select-title').textContent = '누구의 삶을 살아볼까요?';
-      $('select-hint').innerHTML = '직업마다 완전히 다른 사건이 진행됩니다. 나머지 세 사람은 이야기 속에서 만나게 됩니다.';
-      $('job-list').hidden = false;
       $('seat-row').hidden = true;
-      sel.gender = Save.gender() || 'm';
-      drawGender();
-      $('gender-row').hidden = true;
       drawSoloJobs();
-      $('btn-start').disabled = true;
+      drawNameChips();
+      goStep(1);
     } else {
       $('select-title').textContent = '누가 누구를 맡을까요?';
       $('select-hint').innerHTML = '기기 하나를 돌려가며 순서대로 플레이합니다. <b>앞사람이 만든 흔적이 뒷사람 이야기에 실제로 등장합니다.</b>';
-      $('job-list').hidden = true;
+      ['mk-1', 'mk-2', 'mk-3'].forEach(function (id) { $(id).hidden = true; });
+      $('mk-step').textContent = '함께 플레이';
       $('seat-row').hidden = false;
-      $('gender-row').hidden = true;
+      $('btn-start').textContent = '이야기 시작';
       renderSeatPicker();
     }
     UI.mood('screen-select', 'summer');
     UI.show('screen-select');
+  }
+
+  /* 단계 이동 — 직업 → 성별 → 이름 */
+  function goStep(n) {
+    step = n;
+    ['mk-1', 'mk-2', 'mk-3'].forEach(function (id, i) { $(id).hidden = (i + 1) !== n; });
+    $('mk-step').textContent = 'STEP ' + n + ' / 3';
+    $('btn-start').textContent = n === 3 ? '이야기 시작' : '다음 →';
+
+    if (n === 1) {
+      $('select-title').textContent = '누구의 삶을 살아볼까요?';
+      $('select-hint').innerHTML = '직업마다 완전히 다른 사건이 진행됩니다. 나머지 세 사람은 이야기 속에서 만나게 됩니다.';
+      $('btn-start').disabled = !sel.route;
+    } else if (n === 2) {
+      var j = Engine.JOBS[sel.route];
+      $('select-title').textContent = j.job + ' — 어떤 모습인가요?';
+      $('select-hint').textContent = '고른 모습으로 이야기 내내 등장합니다.';
+      $('gender-quote').textContent = JOB_QUOTE[sel.route] || '';
+      $('gfig-m').innerHTML = Cast.figure(sel.route, 'm');
+      $('gfig-f').innerHTML = Cast.figure(sel.route, 'f');
+      drawGender();
+      $('btn-start').disabled = false;
+    } else {
+      $('select-title').textContent = '이름을 지어주세요';
+      $('select-hint').textContent = '이야기 속 인물의 이름은 그대로지만, 이 기록은 당신의 것으로 남습니다.';
+      drawSummary();
+      $('btn-start').disabled = false;
+    }
+  }
+
+  function drawNameChips() {
+    $('name-chips').innerHTML = NAME_IDEAS.map(function (n) {
+      return '<button type="button" class="chip">' + n + '</button>';
+    }).join('');
+  }
+
+  function drawSummary() {
+    var j = Engine.JOBS[sel.route];
+    $('mk-summary').style.setProperty('--c', j.color);
+    $('mk-summary').innerHTML =
+      '<b>' + j.icon + ' ' + j.job + ' · ' + j.name + '</b> — ' + j.tag + '<br>' +
+      '모습: <b>' + (sel.gender === 'f' ? '여자' : '남자') + '</b><br>' +
+      '<span style="opacity:.8">' + (JOB_QUOTE[sel.route] || '') + '</span>';
   }
 
   function drawSoloJobs() {
@@ -93,7 +144,6 @@
       onPick: function (k) {
         sel.route = k;
         drawSoloJobs();
-        $('gender-row').hidden = false;
         $('btn-start').disabled = false;
         if (global.Sfx) Sfx.play('click');
       }
@@ -106,8 +156,22 @@
     });
   }
 
+  /* 이름 후보 칩 */
+  $('name-chips').addEventListener('click', function (e) {
+    var c = e.target.closest('.chip');
+    if (!c) return;
+    $('player-name').value = c.textContent;
+    if (global.Sfx) Sfx.play('click');
+  });
+
+  /* 단계 뒤로 */
+  $('mk-back').addEventListener('click', function () {
+    if (Game.mode !== 'solo' || step === 1) { toMode(); return; }
+    goStep(step - 1);
+  });
+
   $('gender-pick').addEventListener('click', function (e) {
-    var b = e.target.closest('.gbtn');
+    var b = e.target.closest('.gcard');
     if (!b) return;
     sel.gender = b.dataset.g;
     Save.gender(sel.gender);
@@ -591,8 +655,9 @@
   });
 
   $('btn-start').addEventListener('click', function () {
-    if (Game.mode === 'solo') { if (sel.route) startSolo(); }
-    else startHotseat();
+    if (Game.mode !== 'solo') { startHotseat(); return; }
+    if (step < 3) { goStep(step + 1); if (global.Sfx) Sfx.play('click'); return; }
+    if (sel.route) startSolo();
   });
 
   $('btn-connect').addEventListener('click', connectOnline);

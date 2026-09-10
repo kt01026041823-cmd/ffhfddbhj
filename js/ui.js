@@ -95,7 +95,7 @@
     doctor_1: 'rt_doctor', doctor_5: 'rt_doctor', doctor_6: 'rt_doctor', doctor_11: 'rt_doctor'
   };
 
-  function buildStage(sc) {
+  function buildStage(sc, state) {
     var art = $('scene-art');
     var pick = SCENE_ART[sc.id];
     if (art) {
@@ -134,7 +134,8 @@
       d.className = 'actor idle';
       d.dataset.who = p.key;
       d.style.animationDelay = (i * 120) + 'ms';
-      d.innerHTML = Cast.figure(p.key) +
+      var fg = (state && p.key === state.route && state.gender) || DEFAULT_G[p.key] || 'm';
+      d.innerHTML = Cast.figure(p.key, fg) +
         '<span class="tag">' + UI.esc(p.name) + '</span>';
       host.appendChild(d);
     });
@@ -215,7 +216,7 @@
     var script = $('script');
     script.innerHTML = '';
     UI.hideCloseup();
-    buildStage(sc);
+    buildStage(sc, state);
 
     UI._reveal = {
       lines: (sc.text || []).slice(),

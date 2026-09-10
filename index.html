@@ -61,31 +61,51 @@
     </div>
   </section>
 
-  <!-- ============ 직업 선택 ============ -->
+  <!-- ============ 캐릭터 만들기 (3단계) ============ -->
   <section class="screen" id="screen-select">
     <div class="panel">
+      <div class="mk-bar">
+        <span class="mk-step" id="mk-step">STEP 1 / 3</span>
+        <button class="btn ghost small" id="mk-back">← 뒤로</button>
+      </div>
       <h2 class="h2" id="select-title">누구의 삶을 살아볼까요?</h2>
       <p class="hint" id="select-hint">직업마다 완전히 다른 사건이 진행됩니다.</p>
-      <div class="jobs" id="job-list"></div>
-      <div class="row" id="gender-row" hidden>
-        <span class="field-label">성별</span>
-        <div class="gender" id="gender-pick">
-          <button type="button" class="gbtn" data-g="m">남</button>
-          <button type="button" class="gbtn" data-g="f">여</button>
-        </div>
+
+      <!-- 1단계 · 직업 -->
+      <div class="mk-page" id="mk-1">
+        <div class="jobs" id="job-list"></div>
       </div>
-      <div class="row">
+
+      <!-- 2단계 · 성별 -->
+      <div class="mk-page" id="mk-2" hidden>
+        <div class="genders" id="gender-pick">
+          <button type="button" class="gcard" data-g="m">
+            <div class="gfig" id="gfig-m"></div><span>남자</span>
+          </button>
+          <button type="button" class="gcard" data-g="f">
+            <div class="gfig" id="gfig-f"></div><span>여자</span>
+          </button>
+        </div>
+        <p class="hint" id="gender-quote"></p>
+      </div>
+
+      <!-- 3단계 · 이름 -->
+      <div class="mk-page" id="mk-3" hidden>
         <label class="field">
           <span>플레이어 이름</span>
           <input type="text" id="player-name" maxlength="12" placeholder="예: 지민">
         </label>
+        <div class="chips" id="name-chips"></div>
+        <div class="summary" id="mk-summary"></div>
       </div>
+
+      <!-- 로컬 협동은 좌석표 그대로 -->
       <div class="row" id="seat-row" hidden>
         <div class="seats" id="seat-list"></div>
       </div>
+
       <div class="btn-row">
-        <button class="btn ghost small" data-act="to-mode">← 뒤로</button>
-        <button class="btn primary" id="btn-start" disabled>이야기 시작</button>
+        <button class="btn primary" id="btn-start" disabled>다음 →</button>
       </div>
     </div>
   </section>

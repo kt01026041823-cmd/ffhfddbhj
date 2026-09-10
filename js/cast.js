@@ -53,170 +53,231 @@
   };
   Cast.look = function (key) { return LOOK[key] || LOOK.other; };
 
-  /* ---------- 실루엣 부품 -------------------------------- */
-  /* 좌표계: 200 x 460, 발끝이 460 */
-  var BODY = '#05070b';   /* 배경보다 어둡게 — 실루엣으로 읽히도록 */
 
-  function head(cx, cy, r, extra) {
-    return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + BODY + '"/>' + (extra || '');
+  /* ---------- 치비 인물 ------------------------------------
+   *  좌표계 200 x 460, 발끝 452. 머리가 크고 색이 있는 인물.
+   *  눈 깜빡임과 말할 때 입 움직임은 CSS가 맡는다(.eyes / .mouth).
+   * -------------------------------------------------------- */
+  var SKIN = '#f6d3b4', SKIN2 = '#e3b492', LINE = '#2b2118';
+
+  function esc(n) { return Math.round(n * 10) / 10; }
+
+  /* 얼굴 — 눈, 입, 볼 */
+  function face(o) {
+    var ey = 158, ex = 22;
+    return (
+      /* 볼 */
+      '<ellipse class="blush" cx="' + (100 - 36) + '" cy="176" rx="11" ry="7" fill="#ef9d92" opacity=".45"/>' +
+      '<ellipse class="blush" cx="' + (100 + 36) + '" cy="176" rx="11" ry="7" fill="#ef9d92" opacity=".45"/>' +
+      /* 눈 */
+      '<g class="eyes" fill="' + LINE + '">' +
+        '<ellipse cx="' + (100 - ex) + '" cy="' + ey + '" rx="7.5" ry="9.5"/>' +
+        '<ellipse cx="' + (100 + ex) + '" cy="' + ey + '" rx="7.5" ry="9.5"/>' +
+      '</g>' +
+      '<g fill="#fff" opacity=".9">' +
+        '<circle cx="' + (100 - ex + 3) + '" cy="' + (ey - 3) + '" r="2.4"/>' +
+        '<circle cx="' + (100 + ex + 3) + '" cy="' + (ey - 3) + '" r="2.4"/>' +
+      '</g>' +
+      /* 눈썹 */
+      '<g stroke="' + LINE + '" stroke-width="3" stroke-linecap="round" opacity=".75">' +
+        '<path d="M' + (100 - ex - 9) + ' 140 q9 ' + (o.brow || -4) + ' 18 0"/>' +
+        '<path d="M' + (100 + ex - 9) + ' 140 q9 ' + (o.brow || -4) + ' 18 0"/>' +
+      '</g>' +
+      /* 입 */
+      '<g class="mouth">' +
+        '<path d="M92 184 q8 ' + (o.smile == null ? 7 : o.smile) + ' 16 0" fill="none" stroke="' + LINE +
+        '" stroke-width="3.2" stroke-linecap="round"/>' +
+      '</g>'
+    );
   }
 
-  /* 어깨에서 아래로 떨어지는 몸통 — w는 어깨 너비 */
-  function torso(w, top, bottom, flare) {
-    var cx = 100, half = w / 2, foot = half + (flare || 0);
-    return '<path d="M' + (cx - half) + ' ' + top +
-           ' Q' + cx + ' ' + (top - 14) + ' ' + (cx + half) + ' ' + top +
-           ' L' + (cx + foot) + ' ' + bottom +
-           ' L' + (cx - foot) + ' ' + bottom + ' Z" fill="' + BODY + '"/>';
+  /* 머리카락 — 남/여 */
+  function hair(color, g) {
+    var top =
+      '<path d="M32 150 a68 68 0 0 1 136 0 q-8 -46 -68 -46 q-60 0 -68 46 Z" fill="' + color + '"/>' +
+      '<path d="M36 132 q22 -34 64 -34 q42 0 64 34 q-14 -12 -30 -6 q-16 -18 -40 -12 q-24 6 -34 22 q-14 -8 -24 -4 Z" fill="' + color + '"/>';
+    if (g === 'f') {
+      top += '<path d="M30 146 q-6 64 6 104 q14 -10 12 -52 q-2 -34 -18 -52 Z" fill="' + color + '"/>' +
+             '<path d="M170 146 q6 64 -6 104 q-14 -10 -12 -52 q2 -34 18 -52 Z" fill="' + color + '"/>' +
+             '<circle cx="150" cy="112" r="19" fill="' + color + '"/>';     /* 묶은 머리 */
+    }
+    return top;
   }
 
-  function legs(top, bottom, w) {
-    w = w || 22;
-    return '<rect x="' + (100 - w - 6) + '" y="' + top + '" width="' + w + '" height="' + (bottom - top) + '" fill="' + BODY + '"/>' +
-           '<rect x="' + (100 + 6) + '" y="' + top + '" width="' + w + '" height="' + (bottom - top) + '" fill="' + BODY + '"/>';
+  /* 몸통 · 팔 · 다리 */
+  function body(o) {
+    var top = o.top, dark = o.topDark || o.top, pants = o.pants || '#2c3550',
+        shoe = o.shoes || '#241d18';
+    return (
+      /* 다리 */
+      '<rect x="76" y="344" width="20" height="92" rx="9" fill="' + pants + '"/>' +
+      '<rect x="104" y="344" width="20" height="92" rx="9" fill="' + pants + '"/>' +
+      '<rect x="70" y="430" width="30" height="22" rx="9" fill="' + shoe + '"/>' +
+      '<rect x="100" y="430" width="30" height="22" rx="9" fill="' + shoe + '"/>' +
+      /* 몸통 */
+      '<path d="M62 226 q38 -14 76 0 l10 124 q-48 12 -96 0 Z" fill="' + top + '"/>' +
+      /* 팔 */
+      '<rect class="armL" x="42" y="232" width="22" height="96" rx="11" fill="' + dark + '"/>' +
+      '<rect class="armR" x="136" y="232" width="22" height="96" rx="11" fill="' + dark + '"/>' +
+      '<circle cx="53" cy="332" r="12" fill="' + SKIN + '"/>' +
+      '<circle cx="147" cy="332" r="12" fill="' + SKIN + '"/>' +
+      /* 목 */
+      '<rect x="88" y="200" width="24" height="30" rx="10" fill="' + SKIN2 + '"/>'
+    );
   }
 
-  function rim(d, color) {
-    return '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="4.2" ' +
-           'stroke-linecap="round" opacity="1"/>';
+  /** 인물 하나 = 몸 + 머리 + 얼굴 + 직업 소품 */
+  function chibi(o) {
+    return '<g class="chibi">' +
+      body(o) +
+      '<circle cx="100" cy="150" r="68" fill="' + SKIN + '"/>' +
+      hair(o.hairColor || '#3a2b22', o.g) +
+      face(o) +
+      (o.kit || '') +
+      '</g>';
   }
 
-  /* ---------- 인물 ---------------------------------------- */
+  /* ---------- 직업별 ---------------------------------------- */
   var FIGURES = {
 
-    /* 경찰 — 각진 어깨, 무전기, 짧은 머리 */
-    police: function (c) {
-      return head(100, 62, 30) +
-        '<rect x="70" y="34" width="60" height="14" rx="6" fill="' + BODY + '"/>' +   /* 짧은 머리 */
-        torso(96, 100, 300, 6) + legs(300, 452) +
-        '<rect x="128" y="128" width="16" height="34" rx="4" fill="' + BODY + '"/>' + /* 무전기 */
-        '<path d="M136 128 L136 108" stroke="' + BODY + '" stroke-width="4"/>' +
-        rim('M52 104 Q64 88 78 82', c) +
-        rim('M52 108 L46 296', c) +
-        rim('M78 44 Q100 26 122 44', c);
+    /* 경찰 — 감청 근무복, 방검조끼, 정모 */
+    police: function (c, g) {
+      return chibi({
+        g: g, top: '#33436e', topDark: '#2a3860', pants: '#232c46', shoes: '#1b1f2c',
+        hairColor: '#2f2620',
+        kit:
+          /* 조끼 */
+          '<path d="M66 232 q34 -12 68 0 l6 78 q-40 10 -80 0 Z" fill="#1a2030"/>' +
+          '<rect x="70" y="262" width="60" height="9" rx="4" fill="#0f1420"/>' +
+          '<rect x="118" y="246" width="14" height="26" rx="4" fill="#0f1420"/>' +
+          /* 정모 */
+          '<path d="M34 118 q66 -40 132 0 q-8 -44 -66 -44 q-58 0 -66 44 Z" fill="#20293f"/>' +
+          '<rect x="28" y="112" width="144" height="16" rx="8" fill="#161c2c"/>' +
+          '<circle cx="100" cy="94" r="10" fill="' + c + '"/>' +
+          /* 어깨 견장 */
+          '<rect x="44" y="234" width="22" height="9" rx="4" fill="' + c + '"/>' +
+          '<rect x="134" y="234" width="22" height="9" rx="4" fill="' + c + '"/>'
+      });
     },
 
-    /* 소방관 — 넓은 어깨, 반사띠 두 줄, 손에 든 헬멧 */
-    fire: function (c) {
-      return head(100, 60, 31) +
-        torso(112, 100, 306, 10) + legs(306, 452, 26) +
-        '<rect x="44" y="176" width="112" height="9" fill="' + c + '" opacity=".55"/>' +
-        '<rect x="42" y="206" width="116" height="9" fill="' + c + '" opacity=".38"/>' +
-        /* 옆으로 든 헬멧 */
-        '<path d="M156 268 a26 22 0 0 1 52 0 z" fill="' + BODY + '"/>' +
-        '<rect x="150" y="264" width="64" height="8" rx="4" fill="' + BODY + '"/>' +
-        rim('M44 106 Q60 86 80 80', c) +
-        rim('M44 110 L40 302', c);
+    /* 소방관 — 방화복, 형광 반사띠, 헬멧 */
+    fire: function (c, g) {
+      return chibi({
+        g: g, top: '#b79463', topDark: '#a38256', pants: '#8f7349', shoes: '#2a2119',
+        hairColor: '#43301f',
+        kit:
+          '<rect x="60" y="276" width="82" height="11" rx="5" fill="#f4d64e"/>' +
+          '<rect x="58" y="296" width="86" height="8" rx="4" fill="#cfe8f5" opacity=".85"/>' +
+          '<rect x="40" y="268" width="26" height="10" rx="5" fill="#f4d64e"/>' +
+          '<rect x="134" y="268" width="26" height="10" rx="5" fill="#f4d64e"/>' +
+          /* 헬멧 */
+          '<path d="M32 142 a68 62 0 0 1 136 0 q-10 -18 -68 -18 q-58 0 -68 18 Z" fill="' + c + '"/>' +
+          '<rect x="24" y="136" width="152" height="16" rx="8" fill="#8f3b1c"/>' +
+          '<rect x="86" y="86" width="28" height="30" rx="6" fill="#f4d64e"/>'
+      });
     },
 
-    /* 군인 — 베레모, 곧은 자세, 견장 */
-    army: function (c) {
-      return head(100, 62, 29) +
-        '<path d="M70 46 Q100 22 132 40 Q124 52 70 52 Z" fill="' + BODY + '"/>' +  /* 베레 */
-        torso(100, 102, 298, 4) + legs(298, 452, 24) +
-        '<rect x="52" y="112" width="30" height="8" rx="3" fill="' + c + '" opacity=".5"/>' +
-        '<rect x="118" y="112" width="30" height="8" rx="3" fill="' + c + '" opacity=".5"/>' +
-        rim('M50 108 Q62 90 78 84', c) +
-        rim('M50 112 L48 294', c) +
-        rim('M100 300 L100 452', c);
+    /* 군인 — 전투복, 베레, 태극기 패치 */
+    army: function (c, g) {
+      return chibi({
+        g: g, top: '#6e7c55', topDark: '#5e6a49', pants: '#5a664a', shoes: '#26291f',
+        hairColor: '#2b2a20',
+        kit:
+          /* 위장 얼룩 */
+          '<g fill="#4e5a3c" opacity=".85">' +
+            '<ellipse cx="80" cy="252" rx="13" ry="9"/>' +
+            '<ellipse cx="122" cy="276" rx="15" ry="10"/>' +
+            '<ellipse cx="92" cy="304" rx="12" ry="8"/>' +
+          '</g>' +
+          /* 태극기 패치 */
+          '<rect x="132" y="246" width="18" height="12" rx="2" fill="#f3f0ea"/>' +
+          '<circle cx="141" cy="252" r="4" fill="#c3423f"/>' +
+          /* 베레 */
+          '<path d="M32 126 q34 -46 96 -40 q30 4 40 22 q-14 26 -74 30 q-46 2 -62 -12 Z" fill="#333c28"/>' +
+          '<circle cx="146" cy="112" r="8" fill="' + c + '"/>'
+      });
     },
 
-    /* 의사 — 가운(밝은 실루엣), 청진기 */
-    doctor: function (c) {
-      return head(100, 60, 28) +
-        '<path d="M72 40 Q100 24 130 42 Q132 64 126 76 L74 76 Q68 60 72 40 Z" fill="' + BODY + '"/>' +
-        torso(90, 98, 240, 0) +
-        '<path d="M56 240 L144 240 L156 372 L44 372 Z" fill="#e9eef2" opacity=".16"/>' +  /* 가운 자락 */
-        '<path d="M56 240 L144 240 L156 372 L44 372 Z" fill="none" stroke="' + c + '" stroke-width="2" opacity=".5"/>' +
-        legs(372, 452, 20) +
-        '<path d="M86 100 Q86 150 100 158 Q114 150 114 100" fill="none" stroke="' + c +
-        '" stroke-width="4" opacity=".8"/>' +                                        /* 청진기 */
-        rim('M56 104 Q68 88 82 82', c);
+    /* 의사 — 흰 가운, 스크럽, 청진기 */
+    doctor: function (c, g) {
+      return chibi({
+        g: g, top: '#3c5578', topDark: '#334a69', pants: '#33496a', shoes: '#e9edf1',
+        hairColor: '#35271f',
+        kit:
+          /* 가운 */
+          '<path d="M58 230 q14 -8 24 -10 l6 120 q-24 4 -34 0 Z" fill="#f4f7fa"/>' +
+          '<path d="M142 230 q-14 -8 -24 -10 l-6 120 q24 4 34 0 Z" fill="#f4f7fa"/>' +
+          /* 청진기 */
+          '<path d="M84 214 q0 52 16 60 q16 -8 16 -60" fill="none" stroke="#c9d3dc" stroke-width="6" stroke-linecap="round"/>' +
+          '<circle cx="100" cy="280" r="10" fill="' + c + '"/>' +
+          /* 사원증 */
+          '<rect x="122" y="272" width="16" height="22" rx="3" fill="#eef2f6"/>'
+      });
     },
 
-    /* 한상철 — 침대에 앉은 야윈 실루엣, 산소 캐뉼라 */
-    sangchul: function (c) {
-      return '<rect x="20" y="330" width="180" height="18" rx="6" fill="' + BODY + '"/>' +  /* 침대 */
-        '<rect x="26" y="348" width="14" height="88" fill="' + BODY + '"/>' +
-        '<rect x="160" y="348" width="14" height="88" fill="' + BODY + '"/>' +
-        head(100, 190, 27) +
-        '<path d="M76 218 Q100 206 124 218 L136 330 L64 330 Z" fill="' + BODY + '"/>' +
-        '<path d="M64 330 Q100 318 190 334 L190 348 L64 348 Z" fill="' + BODY + '" opacity=".8"/>' +
-        '<path d="M88 198 Q100 210 112 198" fill="none" stroke="' + c + '" stroke-width="3" opacity=".8"/>' +
-        '<path d="M112 200 Q150 214 150 300" fill="none" stroke="' + c +
-        '" stroke-width="2.6" opacity=".55"/>' +
-        rim('M74 224 L66 326', c);
+    /* 한상철 — 환자복, 산소 캐뉼라 */
+    sangchul: function (c, g) {
+      return chibi({
+        g: g, top: '#9fb3bd', topDark: '#8ea3ae', pants: '#8ea3ae', shoes: '#5c6a72',
+        hairColor: '#9a9a96', brow: 4, smile: 2,
+        kit:
+          '<path d="M78 176 q22 12 44 0" fill="none" stroke="#dfe7ec" stroke-width="4"/>' +
+          '<path d="M78 176 q-16 40 -8 74" fill="none" stroke="#dfe7ec" stroke-width="4"/>' +
+          '<rect x="66" y="244" width="68" height="7" rx="3" fill="#8ba0ab"/>'
+      });
     },
 
-    /* 병사 — 전투모, 좁은 어깨 */
-    soldier: function (c) {
-      return head(100, 66, 27) +
-        '<path d="M72 50 L128 50 L132 60 L68 60 Z" fill="' + BODY + '"/>' +
-        '<rect x="66" y="46" width="68" height="8" rx="4" fill="' + BODY + '"/>' +
-        torso(88, 106, 298, 2) + legs(298, 452, 22) +
-        rim('M56 112 Q66 96 80 90', c);
+    soldier: function (c, g) {
+      return chibi({ g: g, top: '#77855e', topDark: '#67734f', pants: '#5f6b4d',
+        shoes: '#26291f', hairColor: '#2f2b22', smile: 3 });
     },
-
-    /* 신참 대원 — 헬멧 쓴 채 */
-    rookie: function (c) {
-      return '<path d="M68 60 a32 28 0 0 1 64 0 z" fill="' + BODY + '"/>' +
-        '<rect x="60" y="56" width="80" height="10" rx="5" fill="' + BODY + '"/>' +
-        head(100, 78, 24) +
-        torso(102, 112, 300, 8) + legs(300, 452, 24) +
-        '<rect x="50" y="180" width="100" height="8" fill="' + c + '" opacity=".45"/>' +
-        rim('M50 118 Q62 100 78 94', c);
+    rookie: function (c, g) {
+      return chibi({ g: g, top: '#c0a06e', topDark: '#ab8d5f', pants: '#93794f',
+        shoes: '#2a2119', hairColor: '#3d2c1e',
+        kit: '<rect x="60" y="280" width="80" height="9" rx="4" fill="#f4d64e"/>' });
     },
-
-    /* 후배 형사 — 묶은 머리 */
-    partner: function (c) {
-      return head(100, 62, 27) +
-        '<path d="M74 44 Q100 26 128 44 Q128 58 122 66 L78 66 Q72 56 74 44 Z" fill="' + BODY + '"/>' +
-        '<circle cx="132" cy="72" r="13" fill="' + BODY + '"/>' +
-        torso(88, 102, 296, 4) + legs(296, 452, 21) +
-        rim('M58 108 Q68 92 82 86', c);
+    partner: function (c, g) {
+      return chibi({ g: g || 'f', top: '#3b4c78', topDark: '#324068', pants: '#28304a',
+        shoes: '#1b1f2c', hairColor: '#33261e',
+        kit: '<path d="M66 232 q34 -12 68 0 l6 74 q-40 10 -80 0 Z" fill="#1c2333"/>' });
     },
-
-    /* 노인 — 굽은 등 */
-    elder: function (c) {
-      return head(96, 106, 26) +
-        '<path d="M70 132 Q96 120 122 136 L142 320 L62 320 Z" fill="' + BODY + '"/>' +
-        legs(320, 452, 20) +
-        '<path d="M146 150 L152 452" stroke="' + BODY + '" stroke-width="7"/>' +  /* 지팡이 */
-        rim('M70 138 Q78 126 92 122', c);
+    elder: function (c, g) {
+      return chibi({ g: g, top: '#8a7f6d', topDark: '#786e5e', pants: '#6c6355',
+        shoes: '#3b352c', hairColor: '#c9c6bd', brow: 3, smile: 1 });
     },
-
-    /* 박정한 — 후드, 웅크린 어깨 */
-    jeonghan: function (c) {
-      return '<path d="M66 74 Q100 40 134 74 Q136 100 128 110 L72 110 Q64 96 66 74 Z" fill="' + BODY + '"/>' +
-        head(100, 82, 25) +
-        '<path d="M70 110 Q100 100 130 110 L142 300 L58 300 Z" fill="' + BODY + '"/>' +
-        legs(300, 452, 22) +
-        rim('M70 116 L60 296', c);
+    jeonghan: function (c, g) {
+      return chibi({ g: g, top: '#4a4152', topDark: '#3e3646', pants: '#332e3c',
+        shoes: '#241f2a', hairColor: '#241c18', brow: 5, smile: -3 });
     },
-
-    /* 상급자 / 그 외 — 정장 실루엣 */
-    chief: function (c) {
-      return head(100, 62, 28) +
-        torso(94, 100, 300, 4) + legs(300, 452, 22) +
-        '<path d="M100 104 L94 140 L100 152 L106 140 Z" fill="' + c + '" opacity=".45"/>' +
-        rim('M54 106 Q66 90 80 84', c);
+    chief: function (c, g) {
+      return chibi({ g: g, top: '#565f6d', topDark: '#4a525e', pants: '#3d4550',
+        shoes: '#22262c', hairColor: '#3a332c', brow: 2 });
     },
-
-    nurse: function (c) { return FIGURES.doctor(c); },
-    family: function (c) { return FIGURES.elder(c); },
-    radio: function (c) { return FIGURES.chief(c); },
-    other: function (c) { return FIGURES.chief(c); }
+    nurse: function (c, g) {
+      return chibi({ g: g || 'f', top: '#5fb9ac', topDark: '#52a396', pants: '#4a8f85',
+        shoes: '#eef3f4', hairColor: '#2f2620' });
+    },
+    family: function (c, g) {
+      return chibi({ g: g || 'f', top: '#a97f7f', topDark: '#956f6f', pants: '#6f5555',
+        shoes: '#3a2d2d', hairColor: '#2c221c', smile: 2 });
+    },
+    radio: function () { return ''; },
+    other: function (c, g) {
+      return chibi({ g: g, top: '#6b7382', topDark: '#5c636f', pants: '#4b515b',
+        shoes: '#2a2d33', hairColor: '#332c26' });
+    }
   };
 
-  Cast.figure = function (key) {
+  /** key: 인물, g: 'm'|'f' (내 캐릭터는 플레이어가 고른 성별로) */
+  Cast.figure = function (key, g) {
+    var fn = FIGURES[key] || FIGURES.other;
     var look = Cast.look(key);
-    var draw = FIGURES[key] || FIGURES.other;
     return '<svg class="fig" viewBox="0 0 200 460" xmlns="http://www.w3.org/2000/svg" ' +
-      'preserveAspectRatio="xMidYMax meet" aria-hidden="true">' +
-      '<ellipse cx="100" cy="452" rx="66" ry="12" fill="#000" opacity=".45"/>' +
-      draw(look.rim) +
-      '</svg>';
+           'preserveAspectRatio="xMidYMax meet" aria-hidden="true">' +
+           '<ellipse cx="100" cy="452" rx="60" ry="11" fill="#000" opacity=".32"/>' +
+           fn(look.rim, g === 'f' ? 'f' : 'm') + '</svg>';
   };
+
 
   /* ---------- 장면에 나오는 인물 -------------------------- */
   Cast.speakers = function (scene) {
