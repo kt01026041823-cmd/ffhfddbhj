@@ -86,7 +86,13 @@
   var SCENE_ART = {
     pro_1: 'school', pro_3: 'school',
     re_2: 'reunion', re_4: 'reunion',
-    ending_true: 'reunion', ending_happy: 'reunion', ending_normal: 'title', ending_sad: 'title'
+    ending_true: 'reunion', ending_happy: 'reunion', ending_normal: 'title', ending_sad: 'title',
+
+    /* 각 루트의 현장 — 스토리보드에서 가져온 그림 */
+    police_1: 'rt_police', police_5: 'rt_police', police_9: 'rt_police', police_12: 'rt_police',
+    fire_1: 'rt_fire',     fire_5: 'rt_fire',     fire_8: 'rt_fire',     fire_9: 'rt_fire',
+    army_1: 'rt_army',     army_5: 'rt_army',     army_6: 'rt_army',     army_11: 'rt_army',
+    doctor_1: 'rt_doctor', doctor_5: 'rt_doctor', doctor_6: 'rt_doctor', doctor_11: 'rt_doctor'
   };
 
   function buildStage(sc) {
