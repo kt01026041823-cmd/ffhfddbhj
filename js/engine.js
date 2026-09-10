@@ -45,6 +45,7 @@
       scene: Engine.PROLOGUE,
       stats: { bond: 0, faith: 0, scar: 0, memory: 0 },
       flags: {},                    // 내 루트 안에서만 쓰는 플래그
+      docs: [],                     // 손에 넣은 문서 id (보관함)
       world: {},                    // 네 사람이 공유하는 세계 플래그(멀티 동기화 대상)
       history: [Engine.PROLOGUE],   // 지나온 씬 id
       picked: [],                   // 고른 선택 id (리플레이 / 결산용)
@@ -77,6 +78,12 @@
     if (req.world && !state.world[req.world]) return false;
     if (req.noworld && state.world[req.noworld]) return false;
     if (req.route && state.route !== req.route) return false;
+    if (req.doc && (state.docs || []).indexOf(req.doc) < 0) return false;
+    if (req.seenIn) {                       // 이 방에서 몇 개를 살펴봤는가
+      var n = Engine.seenCount(state, req.seenIn);
+      if (req.min != null && n < req.min) return false;
+      if (req.max != null && n > req.max) return false;
+    }
     if (req.stat) {
       var v = state.stats[req.stat] || 0;
       if (req.min != null && v < req.min) return false;
@@ -86,10 +93,45 @@
   }
   Engine.test = test;
 
+  /* 탐색 씬에서 이미 살펴본 지점 -------------------------------- */
+  Engine.seenKey = function (sceneId, spotId) { return 'seen_' + sceneId + '_' + spotId; };
+  Engine.seenCount = function (state, sceneId) {
+    var pre = 'seen_' + sceneId + '_', n = 0;
+    Object.keys(state.flags).forEach(function (k) {
+      if (k.indexOf(pre) === 0 && state.flags[k]) n++;
+    });
+    return n;
+  };
+
+  /* 탐색 씬의 지점을 선택지로 바꾼다.
+     — 이렇게 해두면 "방을 둘러보는 것"도 결국 똑같은 상태 전이라서
+       저장·되감기·멀티 동기화가 전부 공짜로 따라온다. */
+  function spotChoice(sc, h) {
+    var set = {};
+    set[Engine.seenKey(sc.id, h.id)] = true;
+    if (h.set) Object.keys(h.set).forEach(function (k) { set[k] = h.set[k]; });
+    return {
+      id: sc.id + '#' + h.id,
+      t: h.label,
+      spot: h,
+      to: h.to || sc.id,          // 기본은 제자리 — 방에 머문다
+      add: h.add, set: set, world: h.world, doc: h.doc, req: h.req
+    };
+  }
+
   /* 지금 고를 수 있는 선택지 ------------------------------------ */
   Engine.choices = function (state) {
     var sc = Engine.scene(state);
     var out = [];
+
+    if (sc.type === 'look') {
+      (sc.hotspots || []).forEach(function (h) {
+        if (state.flags[Engine.seenKey(sc.id, h.id)]) return;   // 이미 본 것
+        var c = spotChoice(sc, h);
+        if (test(state, c.req)) out.push({ id: c.id, index: -1, data: c, spot: h });
+      });
+    }
+
     (sc.choices || []).forEach(function (c, i) {
       if (test(state, c.req)) out.push({ id: c.id || (sc.id + ':' + i), index: i, data: c });
     });
@@ -113,16 +155,23 @@
         state.world[k] = true;
       });
     }
+    if (e.doc) {
+      if (!state.docs) state.docs = [];
+      (Array.isArray(e.doc) ? e.doc : [e.doc]).forEach(function (d) {
+        if (state.docs.indexOf(d) < 0) state.docs.push(d);
+      });
+    }
   }
   Engine.applyEffects = applyEffects;
 
   /* 씬 진입 처리 ------------------------------------------------ */
   function enter(state, sceneId) {
+    var staying = state.scene === sceneId;   // 탐색 씬에서 제자리에 머무는 경우
     state.scene = sceneId;
     var sc = global.Story.scenes[sceneId];
     if (!sc) throw new Error('unknown scene: ' + sceneId);
     if (state.history[state.history.length - 1] !== sceneId) state.history.push(sceneId);
-    applyEffects(state, sc.onEnter);
+    if (!staying) applyEffects(state, sc.onEnter);   // onEnter는 들어올 때 한 번만
     if (sc.ending) { state.ending = sc.ending; state.done = true; }
     return state;
   }

@@ -237,3 +237,216 @@
 
   global.UI = UI;
 })(window);
+
+/* =========================================================
+ *  ui.explore.js — 1인칭 탐색 + 문서 읽기
+ *  (ui.js 뒤에 이어 붙는 부분)
+ * ========================================================= */
+(function (global) {
+  'use strict';
+  var UI = global.UI, $ = UI.$;
+
+  /* ---------- 탐색 씬 그리기 ---------------------------- */
+  UI.renderLook = function (state, handlers) {
+    var sc = Engine.scene(state);
+    UI.mood('screen-play', sc.mood);
+
+    $('explore').hidden = false;
+    $('stage').hidden = true;
+    $('observe').hidden = true;
+
+    /* 무대 */
+    $('set-wrap').innerHTML = Stage.draw(sc.view || { pal: 'archive' });
+    UI._layers = $('set-wrap').querySelectorAll('.lay');
+
+    /* 들어설 때의 두세 줄 */
+    $('look-intro').innerHTML = (sc.intro || []).map(function (t) {
+      return '<p>' + UI.esc(t) + '</p>';
+    }).join('');
+
+    UI.refreshSpots(state, handlers);
+  };
+
+  /* 살펴볼 지점 + 나가기 — 상태가 바뀔 때마다 다시 그린다 */
+  UI.refreshSpots = function (state, handlers) {
+    var sc = Engine.scene(state);
+    var opts = Engine.choices(state);
+    var spots = $('spots');
+    spots.innerHTML = '';
+
+    var total = (sc.hotspots || []).length;
+    var seen = Engine.seenCount(state, sc.id);
+
+    opts.filter(function (o) { return o.spot; }).forEach(function (o, i) {
+      var h = o.spot;
+      var b = document.createElement('button');
+      b.className = 'spot' + (h.doc ? ' doc' : '');
+      b.type = 'button';
+      b.style.left = h.hx + '%';
+      b.style.top = h.hy + '%';
+      b.style.animationDelay = (i * 90) + 'ms';
+      b.innerHTML = '<span class="ring"></span><span class="tag">' + UI.esc(h.label) + '</span>';
+      b.addEventListener('mouseenter', function () { Sfx.play('hover'); });
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        handlers.onChoice(o.id);
+      });
+      spots.appendChild(b);
+    });
+
+    $('look-hint').textContent = sc.hint || '살펴본다';
+    $('look-count').textContent = '살펴본 것 ' + seen + ' / ' + total;
+
+    var exits = $('look-exits');
+    exits.innerHTML = '';
+    opts.filter(function (o) { return !o.spot; }).forEach(function (o) {
+      var b = document.createElement('button');
+      b.className = 'btn' + (seen >= 2 ? ' primary' : '');
+      b.type = 'button';
+      b.textContent = o.data.t;
+      b.addEventListener('click', function () { Sfx.play('step'); handlers.onChoice(o.id); });
+      exits.appendChild(b);
+    });
+    if (!exits.children.length) {
+      var need = document.createElement('span');
+      need.className = 'look-hint';
+      need.textContent = '— 조금 더 살펴봐야 나갈 수 있다';
+      exits.appendChild(need);
+    }
+  };
+
+  /* 살펴본 결과 문장 */
+  UI.showObserve = function (lines, more) {
+    var box = $('observe');
+    box.innerHTML = (lines || []).map(function (t) {
+      return '<p>' + UI.esc(t) + '</p>';
+    }).join('') + (more ? '<span class="more">' + UI.esc(more) + '</span>' : '');
+    box.hidden = false;
+    box.style.animation = 'none';
+    void box.offsetWidth;
+    box.style.animation = '';
+  };
+
+  UI.hideLook = function () {
+    $('explore').hidden = true;
+    $('stage').hidden = false;
+  };
+
+  /* 마우스를 따라 시선이 움직인다(시차 + 손전등) */
+  UI.bindParallax = function () {
+    var ex = $('explore');
+    function move(px, py) {
+      ex.style.setProperty('--mx', (px * 100) + '%');
+      ex.style.setProperty('--my', (py * 100) + '%');
+      var dx = (px - 0.5), dy = (py - 0.5);
+      (UI._layers || []).forEach(function (g) {
+        var d = parseFloat(g.getAttribute('data-depth')) || 0.5;
+        g.setAttribute('transform',
+          'translate(' + (-dx * 46 * d).toFixed(1) + ',' + (-dy * 22 * d).toFixed(1) + ')');
+      });
+    }
+    ex.addEventListener('mousemove', function (e) {
+      move(e.clientX / window.innerWidth, e.clientY / window.innerHeight);
+    });
+    ex.addEventListener('touchmove', function (e) {
+      if (!e.touches[0]) return;
+      move(e.touches[0].clientX / window.innerWidth, e.touches[0].clientY / window.innerHeight);
+    }, { passive: true });
+  };
+
+  /* ---------- 문서 읽기 --------------------------------- */
+  var KIND = {
+    report: '공 문 서', log: '기 록 부', letter: '편 지',
+    chart: '의 무 기 록', note: '메 모', photo: '사 진'
+  };
+
+  /* ~~지워진 글자~~ → 먹칠. 기억이 충분하면 밑에 있는 글자가 비친다 */
+  function inkLine(raw, revealed) {
+    var out = '', rest = String(raw), m;
+    while ((m = rest.match(/~~(.+?)~~/))) {
+      out += UI.esc(rest.slice(0, m.index));
+      var word = m[1];
+      out += revealed
+        ? '<span class="unredact">' + UI.esc(word) + '</span>'
+        : '<span class="redact" aria-label="지워진 글자">' + UI.esc(word) + '</span>';
+      rest = rest.slice(m.index + m[0].length);
+    }
+    return out + UI.esc(rest);
+  }
+
+  UI.openDoc = function (docId, state, onClose) {
+    var d = Story.doc(docId);
+    if (!d) return;
+    var revealed = d.reveal ? Engine.test(state, d.reveal) : true;
+
+    $('paper').className = 'paper ' + d.kind;
+    $('paper').innerHTML =
+      (d.stamp ? '<div class="stamp">' + UI.esc(d.stamp) + '</div>' : '') +
+      '<p class="kind">' + (KIND[d.kind] || '') + '</p>' +
+      '<h3>' + UI.esc(d.title) + '</h3>' +
+      '<p class="meta">' + UI.esc(d.from || '') +
+        (d.date ? ' · ' + UI.esc(d.date) : '') + '</p>' +
+      '<div class="body">' + (d.lines || []).map(function (l) {
+        return '<p>' + inkLine(l, revealed) + '</p>';
+      }).join('') + '</div>' +
+      (d.note ? '<p class="note">' + UI.esc(d.note) + '</p>' : '') +
+      (!revealed && d.reveal
+        ? '<p class="note">지워진 글자는 아직 읽히지 않는다. 그해 여름을 더 알게 되면, 눌린 자국이 보일지도 모른다.</p>'
+        : '');
+
+    $('doc-layer').hidden = false;
+    Sfx.play('paper');
+    UI._docClose = onClose || null;
+  };
+
+  UI.closeDoc = function () {
+    if ($('doc-layer').hidden) return false;
+    $('doc-layer').hidden = true;
+    Sfx.play('paper', { volume: 0.6 });
+    var cb = UI._docClose; UI._docClose = null;
+    if (cb) cb();
+    return true;
+  };
+  UI.docOpen = function () { return !$('doc-layer').hidden; };
+
+  /* ---------- 보관함 ------------------------------------ */
+  UI.renderArchive = function (state, onOpen) {
+    var docs = state.docs || [];
+    var html = '<h4>손에 넣은 것 ' + docs.length + ' / ' + Object.keys(Story.docs).length + '</h4>';
+    if (!docs.length) {
+      html += '<div class="item mini">아직 없다. 방을 둘러보면 종이가 나온다.</div>';
+    } else {
+      html += '<div class="docs-list">' + docs.map(function (id) {
+        var d = Story.doc(id);
+        return '<div class="item" data-doc="' + id + '">' +
+          '<div class="k">' + (KIND[d.kind] || '') + '</div>' +
+          '<b>' + UI.esc(d.title) + '</b>' +
+          '<div class="mini">' + UI.esc(d.from || '') + (d.date ? ' · ' + UI.esc(d.date) : '') + '</div>' +
+          '</div>';
+      }).join('') + '</div>';
+    }
+    UI.openDrawer('보관함', html, false);
+    $('drawer-body').querySelectorAll('[data-doc]').forEach(function (el) {
+      el.addEventListener('click', function () { onOpen(el.getAttribute('data-doc')); });
+    });
+  };
+
+  /* ---------- 톤 디렉터 ---------------------------------
+   *  상처가 깊을수록 색이 빠지고 어두워진다.
+   *  유대가 높을수록 다시 밝아진다. 엔딩까지 이 값이 따라간다.
+   * ------------------------------------------------------ */
+  UI.tone = function (state) {
+    var scar = state.stats.scar || 0, bond = state.stats.bond || 0;
+    var s = Math.min(scar / 16, 1);
+    var b = Math.min(bond / 30, 1);
+    var sat = (1 - s * 0.55 + b * 0.12).toFixed(3);
+    var bright = (1 - s * 0.22 + b * 0.06).toFixed(3);
+    ['screen-play', 'screen-ending'].forEach(function (id) {
+      var el = $(id);
+      if (!el) return;
+      el.style.setProperty('--tone-sat', sat);
+      el.style.setProperty('--tone-bright', bright);
+    });
+    GameAudio.tone(scar, bond);
+  };
+})(window);

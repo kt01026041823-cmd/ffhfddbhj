@@ -23,18 +23,30 @@
     });
   };
 
+  /* 문서(편지·기록·사진) 등록 */
+  Story.docs = {};
+  Story.registerDocs = function (map) {
+    Object.keys(map).forEach(function (id) {
+      if (Story.docs[id]) throw new Error('duplicate doc id: ' + id);
+      map[id].id = id;
+      Story.docs[id] = map[id];
+    });
+  };
+  Story.doc = function (id) { return Story.docs[id]; };
+
   /* 엔딩 판정 -------------------------------------------------
    *  기준값은 tools/check.js 로 실제 분포를 측정해서 잡았다.
-   *    · 무작위로 아무거나 누르면  유대 12 / 기억 6 근처
-   *    · 친구를 챙기며 플레이하면  유대 25+ / 기억 9+
+   *    · 아무거나 누르며 방을 지나치면   유대 18 / 기억 13 근처
+   *    · 방을 꼼꼼히 보고 친구를 챙기면  유대 32+ / 기억 19+
    *  그래서:
-   *    진엔딩 : 마지막에 "찾아가자"를 고르고(GO)         → 무작위로는 14%
-   *             + 유대 20↑ + 기억 8↑ + 되돌릴 수 없는 선택 없음
-   *    해피   : 유대 16↑
-   *    보통   : 유대 8↑
+   *    진엔딩 : 마지막에 "찾아가자"를 고르고(GO)         → 무작위로는 15%
+   *             + 유대 30↑ + 기억 18↑ + 되돌릴 수 없는 선택 없음
+   *             (= 공간을 실제로 살펴보고 문서를 읽어야만 닿는다)
+   *    해피   : 유대 24↑
+   *    보통   : 유대 12↑
    *    새드   : 그 밖 / 덮어버린 선택을 안고 끝났을 때
    * --------------------------------------------------------- */
-  Story.BAR = { trueBond: 20, trueMemory: 8, happy: 16, normal: 8 };
+  Story.BAR = { trueBond: 30, trueMemory: 18, happy: 24, normal: 12 };
 
   Story.judge = function (state) {
     var st = state.stats, f = state.flags, B = Story.BAR;

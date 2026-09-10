@@ -23,9 +23,9 @@ const load = (p) => {
   new Function(code).call(global);
 };
 
-['js/engine.js', 'js/story/index.js', 'js/story/common.js',
- 'js/story/police.js', 'js/story/fire.js', 'js/story/army.js',
- 'js/story/doctor.js'].forEach(load);
+['js/audio.js', 'js/set.js', 'js/engine.js', 'js/story/index.js', 'js/story/docs.js',
+ 'js/story/common.js', 'js/story/police.js', 'js/story/fire.js', 'js/story/army.js',
+ 'js/story/doctor.js', 'js/story/rooms.js'].forEach(load);
 
 let fail = 0;
 const bad = (m) => { console.log('  ✗ ' + m); fail++; };
@@ -61,7 +61,24 @@ ids.forEach((id) => {
   });
 
   if (!sc.choices && !sc.next && !sc.ending) bad(`${id}: 막힌 씬 (choices/next/ending 전부 없음)`);
-  if (!sc.text || !sc.text.length) bad(`${id}: 본문 없음`);
+  if (sc.type === 'look') {
+    if (!sc.hotspots || sc.hotspots.length < 2) bad(`${id}: 탐색 씬인데 살펴볼 곳이 부족`);
+    (sc.hotspots || []).forEach((h) => {
+      if (!h.id || !h.label) bad(`${id}: 지점에 id/label 없음`);
+      if (h.hx == null || h.hy == null) bad(`${id}#${h.id}: 화면 좌표(hx,hy) 없음`);
+      if (h.hx < 0 || h.hx > 100 || h.hy < 0 || h.hy > 100) bad(`${id}#${h.id}: 좌표가 화면 밖`);
+      if (!h.text && !h.doc) bad(`${id}#${h.id}: 살펴봐도 아무것도 안 나옴`);
+      if (h.doc && !Story.docs[h.doc]) bad(`${id}#${h.id}: 없는 문서 ${h.doc}`);
+      if (h.to && h.to !== '#ending' && !Story.scenes[h.to]) bad(`${id}#${h.id} → ${h.to} (없는 씬)`);
+    });
+    if (!sc.view || !sc.view.pal) bad(`${id}: 그릴 무대(view.pal)가 없음`);
+    ['back', 'mid', 'fore'].forEach((k) => {
+      (sc.view && sc.view[k] || []).forEach((o) => {
+        if (Stage.props().indexOf(o.t) < 0) bad(`${id}: 없는 소품 '${o.t}'`);
+      });
+    });
+  } else if (!sc.text || !sc.text.length) bad(`${id}: 본문 없음`);
+  if (sc.doc && !Story.docs[sc.doc]) bad(`${id}: 없는 문서 ${sc.doc}`);
 });
 
 /* 선택지 id 중복 */
@@ -73,6 +90,22 @@ ids.forEach((id) => (scenes[id].choices || []).forEach((c) => {
 
 if (!fail) ok(`연결 ${links}개, 선택지 ${seenChoice.size}개 — 끊긴 곳 없음`);
 
+/* 문서 검사 */
+const docIds = Object.keys(Story.docs);
+const usedDocs = new Set();
+ids.forEach((id) => {
+  const sc = scenes[id];
+  (sc.hotspots || []).forEach((h) => h.doc && usedDocs.add(h.doc));
+  (sc.choices || []).forEach((c) => c.doc && usedDocs.add(c.doc));
+});
+docIds.forEach((d) => {
+  const doc = Story.docs[d];
+  if (!doc.lines || !doc.lines.length) bad(`문서 ${d}: 본문 없음`);
+  if (!doc.title || !doc.kind) bad(`문서 ${d}: 제목/종류 없음`);
+  if (!usedDocs.has(d)) bad(`문서 ${d}: 게임 안에서 발견할 수 없음`);
+});
+if (!fail) ok(`문서 ${docIds.length}개 — 전부 어딘가에서 발견된다`);
+
 /* ---------- 2~3) 무작위 플레이 ---------- */
 console.log('\n[2] 무작위 플레이 (루트별 3000회)');
 
@@ -80,6 +113,7 @@ const visited = new Set();
 const endingsByRoute = {};
 let maxSteps = 0;
 
+const docsSeen = new Set();
 function play(route, pickFn) {
   let st = Engine.newState(route, 'test');
   visited.add(st.scene);
@@ -93,6 +127,7 @@ function play(route, pickFn) {
     visited.add(st.scene);
   }
   maxSteps = Math.max(maxSteps, steps);
+  (st.docs || []).forEach((d) => docsSeen.add(d));
   return st;
 }
 
@@ -175,6 +210,9 @@ Engine.JOB_ORDER.forEach((route) => {
 
 /* ---------- 4) 커버리지 ---------- */
 console.log('\n[4] 씬 커버리지');
+const missDocs = docIds.filter((d) => !docsSeen.has(d));
+if (missDocs.length) bad('플레이로 도달하지 않은 문서: ' + missDocs.join(', '));
+else ok(`문서 ${docIds.length}개 전부 실제 플레이에서 발견됨`);
 const unreached = ids.filter((id) => !visited.has(id));
 if (unreached.length) bad('한 번도 도달하지 않은 씬: ' + unreached.join(', '));
 else ok(`${ids.length}개 씬 전부 도달`);

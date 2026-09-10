@@ -124,13 +124,30 @@
       </div>
       <div class="hud-stats" id="hud-stats"></div>
       <div class="hud-right">
+        <button class="icon-btn" id="btn-docs" title="보관함 — 모은 문서">🗂️</button>
         <button class="icon-btn" id="btn-log" title="지금까지의 기록">📜</button>
         <button class="icon-btn" id="btn-party" title="친구들">👥</button>
+        <button class="icon-btn" id="btn-sound" title="소리 끄기/켜기">🔊</button>
         <button class="icon-btn" id="btn-save" title="저장">💾</button>
         <button class="icon-btn" id="btn-quit" title="나가기">✕</button>
       </div>
       <div class="bar"><i id="hud-bar"></i></div>
     </header>
+
+    <!-- 1인칭 탐색 -->
+    <div class="explore" id="explore" hidden>
+      <div class="set-wrap" id="set-wrap"></div>
+      <div class="spots" id="spots"></div>
+      <div class="look-head">
+        <div class="look-intro" id="look-intro"></div>
+      </div>
+      <div class="observe" id="observe" hidden></div>
+      <div class="look-bar">
+        <span class="look-hint" id="look-hint"></span>
+        <span class="look-count" id="look-count"></span>
+        <div class="look-exits" id="look-exits"></div>
+      </div>
+    </div>
 
     <main class="stage" id="stage">
       <div class="place" id="scene-place"></div>
@@ -171,7 +188,7 @@
   <section class="screen" id="screen-dex">
     <div class="panel">
       <h2 class="h2">엔딩 도감</h2>
-      <p class="hint">직업 4개 × 엔딩 4종 = 16칸. 숨겨진 진엔딩은 마지막에 <b>넷이 함께 찾아가는 선택</b>을 하고 <b>유대 20 · 기억 조각 8개</b>를 넘겼을 때 열립니다.</p>
+      <p class="hint">직업 4개 × 엔딩 4종 = 16칸. 숨겨진 진엔딩은 마지막에 <b>넷이 함께 찾아가는 선택</b>을 하고 <b>유대 30 · 기억 조각 18개</b>를 넘겼을 때 열립니다.</p>
       <div class="dex" id="dex-grid"></div>
       <div class="btn-row">
         <button class="btn ghost small" data-act="to-title">← 처음으로</button>
@@ -180,16 +197,28 @@
     </div>
   </section>
 
+  <!-- 손에 쥐고 읽는 것 -->
+  <div class="doc-layer" id="doc-layer" hidden>
+    <article class="paper" id="paper"></article>
+    <div class="doc-actions">
+      <button class="btn small" id="doc-close">덮는다 &nbsp;<kbd>Esc</kbd></button>
+    </div>
+  </div>
+
   <div class="toast" id="toast" hidden></div>
 </div>
 
+<script src="js/audio.js"></script>
+<script src="js/set.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/story/index.js"></script>
+<script src="js/story/docs.js"></script>
 <script src="js/story/common.js"></script>
 <script src="js/story/police.js"></script>
 <script src="js/story/fire.js"></script>
 <script src="js/story/army.js"></script>
 <script src="js/story/doctor.js"></script>
+<script src="js/story/rooms.js"></script>
 <script src="js/save.js"></script>
 <script src="js/net.js"></script>
 <script src="js/ui.js"></script>

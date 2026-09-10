@@ -64,19 +64,12 @@
   {
     id: 'army_4', chapter: '2화 · 지워진 이름', place: '대대 행정실', mood: 'day', at: 0.28,
     text: [
-      '징계 심의 자료를 정리하러 들어간 행정실 캐비닛에, 오래된 표창 명부철이 있었다.',
-      '「인명구조 유공 표창 대장」. 15년 전 8월 항목에서 태오의 손이 멈췄다.',
-      '「해원동 화재 · 아동 4명 구조 · 대상자 ○○○」 — 이름 세 글자가 수정액으로 덮여 있었다.',
-      '비고란: 「대상자 사양 · 비근무 중 개인행동으로 정리」.'
+      '징계 심의 자료를 정리하러 행정실에 들어갔다. 일과가 끝난 행정실은 형광등 하나만 남는다.',
+      '캐비닛 세 번째 칸에 오래된 명부철들이 서 있었다. 등에 연도가 적혀 있다.',
+      '15년 전 것에서 태오의 손이 멈췄다.'
     ],
-    onEnter: { add: { memory: 1 } },
     choices: [
-      { id: 'army_4:a', t: '명부를 창가로 들고 가 빛에 비춰본다',
-        add: { memory: 2, faith: 1 }, set: { read_name: true }, world: 'w_name_hint', to: 'army_5' },
-      { id: 'army_4:b', t: '해당 페이지를 사진으로 남긴다. 열람 기록은 남겠지만',
-        add: { memory: 1, faith: 1 }, set: { photo_name: true }, to: 'army_5' },
-      { id: 'army_4:c', t: '덮는다. 남의 부대, 남의 15년 전 일이다',
-        add: { scar: 1 }, to: 'army_5' }
+      { id: 'army_4:go', t: '캐비닛을 연다', to: 'room_a_admin' }
     ]
   },
   {
@@ -146,31 +139,29 @@
     ],
     choices: [
       { id: 'army_8:a', t: '12시간 안에 내가 찾는다. 대대장에게 시간을 달라고 한다',
-        add: { faith: 2, bond: 2 }, set: { asked_time: true }, to: 'army_9' },
+        add: { faith: 2, bond: 2 }, set: { asked_time: true }, to: 'room_a_ward' },
       { id: 'army_8:b', t: '규정대로 헌병대에 넘긴다. 그게 세환에게도 낫다',
-        add: { faith: 1, scar: 2 }, set: { to_mp: true }, to: 'army_9' },
+        add: { faith: 1, scar: 2 }, set: { to_mp: true }, to: 'room_a_ward' },
       { id: 'army_8:c', t: '경찰에 있는 도현에게 전화한다',
-        add: { bond: 2, faith: 1 }, set: { called_dohyun: true }, world: 'w_police_tip', to: 'army_9' }
+        add: { bond: 2, faith: 1 }, set: { called_dohyun: true }, world: 'w_police_tip', to: 'room_a_ward' }
     ]
   },
   {
-    id: 'army_9', chapter: '5화 · 병원 복도', place: '해원 요양병원 3층', mood: 'cold', at: 0.68,
+    id: 'army_9', chapter: '5화 · 복도에서', place: '해원 요양병원 3층', mood: 'cold', at: 0.68,
     text: [
-      '세환은 아버지 병실 앞 복도에 앉아 있었다. 들어가지도, 돌아가지도 못한 채로.',
-      '태오는 옆에 앉았다. 아무 말 없이 20분.',
       ['세환', '저 이제 어떻게 됩니까.'],
       ['태오', '같이 돌아가면, 이탈이 아니라 지연이야.'],
-      '그때 복도 끝 병실 문패가 태오의 눈에 들어왔다. 3층 창가에서 두 번째 침대.',
-      '「한상철」.'
+      ['세환', '중사님은 왜 여기까지 오셨습니까.'],
+      '태오는 대답 대신 복도 끝을 한 번 봤다. 창가에서 두 번째 침대가 있는 병실 쪽이었다.'
     ],
-    onEnter: { add: { memory: 1 } },
     choices: [
-      { id: 'army_9:a', t: '세환을 먼저 데리고 부대로 돌아간다. 이름은 기억해둔다',
+      { id: 'army_9:a', t: '세환을 먼저 데리고 부대로 돌아간다',
         add: { faith: 2, bond: 2, memory: 1 }, set: { chose_saehwan: true }, world: 'w_name_hint', to: 'army_10' },
-      { id: 'army_9:b', t: '병실 문을 열어본다. 5분만',
+      { id: 'army_9:b', t: '“5분만.” — 그 병실 문을 열어본다',
+        req: { flag: 'saw_plate' },
         add: { memory: 2, scar: 1 }, set: { peeked: true }, world: 'w_name_hint', to: 'army_10' },
-      { id: 'army_9:c', t: '지나친다. 지금은 병사가 먼저다',
-        add: { faith: 1, scar: 1, bond: 1 }, to: 'army_10' }
+      { id: 'army_9:c', t: '아무 말도 하지 않고 같이 일어선다',
+        add: { faith: 1, bond: 1 }, to: 'army_10' }
     ]
   },
   {

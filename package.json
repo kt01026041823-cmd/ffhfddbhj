@@ -1,13 +1,91 @@
 {
   "name": "four-summers",
   "version": "1.0.0",
-  "description": "네 개의 여름 — 경찰·소방관·군인·의사가 된 네 친구의 스토리형 선택지 게임 (혼자 / 로컬 협동 / 온라인 협동)",
+  "description": "네 개의 여름 — 1인칭 탐색과 편지로 진실을 재구성하는 스토리형 선택지 게임 (혼자 / 로컬 협동 / 온라인 협동)",
   "private": true,
   "scripts": {
     "start": "node server/server.js",
-    "test": "node tools/check.js"
+    "test": "node tools/check.js",
+    "desktop": "electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win --x64",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
   },
-  "engines": { "node": ">=14" },
-  "keywords": ["visual-novel", "choice-game", "korean", "multiplayer"],
-  "license": "MIT"
+  "engines": {
+    "node": ">=14"
+  },
+  "keywords": [
+    "visual-novel",
+    "choice-game",
+    "korean",
+    "multiplayer"
+  ],
+  "license": "MIT",
+  "main": "electron/main.js",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.haewon.foursummers",
+    "productName": "FourSummers",
+    "copyright": "MIT",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "electron/**/*",
+      "build/steam_appid.txt",
+      "!dist",
+      "!tools",
+      "!server",
+      "!node_modules/.cache"
+    ],
+    "extraResources": [
+      {
+        "from": "build/steam_appid.txt",
+        "to": "../steam_appid.txt"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "mac": {
+      "target": [
+        "dir",
+        "zip"
+      ],
+      "category": "public.app-category.games",
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": [
+        "dir",
+        "tar.gz"
+      ],
+      "category": "Game",
+      "icon": "build/icon.png"
+    },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "compression": "maximum"
+  }
 }

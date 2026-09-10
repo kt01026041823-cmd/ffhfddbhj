@@ -58,23 +58,16 @@
     ]
   },
   {
-    id: 'police_4', chapter: '2화 · 빈칸', place: '해원경찰서 미제 자료실', mood: 'night', at: 0.24,
+    id: 'police_4', chapter: '2화 · 빈칸', place: '해원경찰서', mood: 'night', at: 0.24,
     text: [
       '노인은 이틀 뒤에 제 발로 찾아왔다. 해원동에서 15년 산 사람이었다.',
       ['노인', '전에도 한 번 그랬어요. 언덕 위 창고. 그때도 재개발 얘기 나왔을 때였고.'],
+      ['노인', '그때 사람 하나 크게 다쳤는데, 뉴스에도 안 나오더라고요.'],
       '이도현의 손이 멈췄다.',
-      '미제 자료실, 15년 전 8월 상자. 「해원동 목재창고 화재」.',
-      '피해: 없음. 구조 아동 4명. 최초 진입자 — 「구조자 미상」.',
-      '그리고 조사 종결 사유 칸에 한 줄. 「상급 지시에 의한 종결」.'
+      '그날 밤, 도현은 지하 미제 자료실 열쇠를 빌렸다. 15년 전 8월 상자는 제일 아래 칸에 있다고 했다.'
     ],
-    onEnter: { add: { memory: 1 } },
     choices: [
-      { id: 'police_4:a', t: '내 이름을 찾아본다. 구조 아동 4명의 이름 칸',
-        add: { memory: 1, bond: 1 }, set: { saw_names: true }, world: 'w_name_hint', to: 'police_5' },
-      { id: 'police_4:b', t: '「상급 지시」가 누구였는지부터 뒤진다',
-        add: { faith: 2 }, set: { chased_order: true }, to: 'police_5' },
-      { id: 'police_4:c', t: '상자를 덮는다. 지금 사건이 먼저다',
-        add: { scar: 1 }, to: 'police_5' }
+      { id: 'police_4:go', t: '자료실로 내려간다', to: 'room_p_archive' }
     ]
   },
   {
@@ -122,11 +115,11 @@
     ],
     choices: [
       { id: 'police_7:a', t: '박정한을 먼저 잡는다. 위는 그 다음이다',
-        add: { faith: 1 }, set: { target_hand: true }, to: 'police_8' },
+        add: { faith: 1 }, set: { target_hand: true }, to: 'room_p_flat' },
       { id: 'police_7:b', t: '박정한을 흔들어 위를 잡는다. 시간이 걸려도',
-        add: { faith: 2 }, set: { target_head: true }, to: 'police_8' },
+        add: { faith: 2 }, set: { target_head: true }, to: 'room_p_flat' },
       { id: 'police_7:c', t: '15년 전 창고 화재부터 다시 연다 — 같은 사람들이다',
-        add: { memory: 1, faith: 1 }, set: { reopen: true }, world: 'w_name_hint', to: 'police_8' }
+        add: { memory: 1, faith: 1 }, set: { reopen: true }, world: 'w_name_hint', to: 'room_p_flat' }
     ]
   },
   {

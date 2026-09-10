@@ -67,22 +67,15 @@
     ]
   },
   {
-    id: 'doctor_4', chapter: '2화 · 흡입 화상', place: '요양병원 기록실', mood: 'night', at: 0.28,
+    id: 'doctor_4', chapter: '2화 · 흡입 화상', place: '해원 요양병원', mood: 'night', at: 0.28,
     text: [
-      '한상철의 최초 입원 기록은 15년 전 8월이었다.',
-      '「기도 흡입 화상, 폐 손상 3도. 화재 현장 자력 탈출. 산업재해 불인정 — 비근무 중.」',
-      '그리고 최초 이송 기록의 사고 장소 칸.',
-      '「해원동 목재창고」.',
-      '하은은 열두 살 여름을 떠올렸다. 누가 자기 등을 밀어 문 밖으로 내보냈던 감각을.'
+      '파견 진료가 끝난 뒤, 하은은 돌아가지 않고 기록실 열쇠를 받았다.',
+      ['하은', '한상철 환자분, 과거 기록 좀 볼게요.'],
+      ['당직의', '그 환자 기록 찾는 사람은 처음 봅니다.'],
+      '기록실은 병동보다 두 도 낮았다.'
     ],
-    onEnter: { add: { memory: 1 } },
     choices: [
-      { id: 'doctor_4:a', t: '친구들에게 알린다. 셋 다에게, 지금',
-        add: { bond: 3, memory: 1 }, set: { told_friends: true }, world: 'w_name_hint', to: 'doctor_5' },
-      { id: 'doctor_4:b', t: '혼자 확인부터 한다. 틀렸으면 상처가 되니까',
-        add: { faith: 2, scar: 1 }, set: { alone_check: true }, to: 'doctor_5' },
-      { id: 'doctor_4:c', t: '기록을 덮는다. 환자와 의사 사이에 그 이야기를 놓지 않는다',
-        add: { faith: 1, scar: 1 }, to: 'doctor_5' }
+      { id: 'doctor_4:go', t: '기록실로 들어간다', to: 'room_d_records' }
     ]
   },
   {
@@ -168,23 +161,20 @@
     ],
     choices: [
       { id: 'doctor_9:a', t: '“받아요. 내가 직접 갈게요.” — 사직서를 다시 넣는다',
-        add: { faith: 2, bond: 2, memory: 1 }, set: { went_himself: true }, world: ['w_doctor_hold', 'w_name_hint'], to: 'doctor_10' },
+        add: { faith: 2, bond: 2, memory: 1 }, set: { went_himself: true }, world: ['w_doctor_hold', 'w_name_hint'], to: 'room_d_bedside' },
       { id: 'doctor_9:b', t: '병상을 확보하고 이송만 조율한다. 나는 여기 있어야 한다',
-        add: { faith: 2 }, set: { arranged: true }, world: 'w_doctor_hold', to: 'doctor_10' },
+        add: { faith: 2 }, set: { arranged: true }, world: 'w_doctor_hold', to: 'room_d_bedside' },
       { id: 'doctor_9:c', t: '“오늘은 병상이 없습니다.” — 사실이었다',
-        add: { scar: 3 }, set: { refused: true }, to: 'doctor_10' }
+        add: { scar: 3 }, set: { refused: true }, to: 'room_d_bedside' }
     ]
   },
   {
-    id: 'doctor_10', chapter: '5화 · 창가에서 두 번째', place: '해원 요양병원 3층', mood: 'night', at: 0.74,
+    id: 'doctor_10', chapter: '5화 · 몇 명입니까', place: '해원 요양병원 3층 · 새벽', mood: 'dawn', at: 0.74,
     text: [
-      '산소마스크 아래에서 한상철이 눈을 떴다. 하은을 알아보는 데 시간이 좀 걸렸다.',
-      ['한상철', '선생님… 나 그때 몇 명 나왔는지 못 봤어요.'],
       ['한상철', '나오다가 정신을 잃어서. 15년 동안 그게 계속 걸렸어요.'],
       ['한상철', '몇 명이었을까요.'],
       '하은은 그 자리에서 대답할 수 있었다. 대답하기까지 15년이 걸렸을 뿐이다.'
     ],
-    onEnter: { add: { memory: 1 } },
     choices: [
       { id: 'doctor_10:a', t: '“네 명이요. 네 명 다 나왔어요.” — 그리고 그중 하나가 나라고 말한다',
         add: { bond: 3, faith: 2, memory: 1 }, set: { answered: true }, world: 'w_name_hint', to: 'doctor_11' },

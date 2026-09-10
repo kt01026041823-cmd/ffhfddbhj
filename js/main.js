@@ -41,6 +41,8 @@
    *  화면 이동
    * ===================================================== */
   function toTitle() {
+    UI.hideLook();
+    Ambience.stop();
     UI.mood('screen-title', 'night');
     $('btn-continue').hidden = !Save.has();
     $('dex-badge').textContent = Save.dexCount();
@@ -171,19 +173,47 @@
    *  진행
    * ===================================================== */
   var prevStats = null;
+  var H = { onChoice: onChoice, onEnding: onEnding };
 
   function draw() {
     var st = state();
+    var sc = Engine.scene(st);
+
     UI.renderHud(st, prevStats);
     prevStats = JSON.parse(JSON.stringify(st.stats));
-    UI.renderScene(st, { onChoice: onChoice, onEnding: onEnding });
+    UI.tone(st);
+    Ambience.set(sc.amb || sc.mood || 'night');
+
+    if (sc.type === 'look') {
+      UI.renderLook(st, H);
+      Sfx.play('step', { volume: 0.7 });
+    } else {
+      UI.hideLook();
+      UI.renderScene(st, H);
+    }
+    if (Net.isOnline()) Net.progress(st);
+  }
+
+  /* 방 안에서 무언가를 살펴봤을 때 — 방을 다시 그리지 않고 그 자리만 갱신 */
+  function lookUpdate(st) {
+    UI.renderHud(st, prevStats);
+    prevStats = JSON.parse(JSON.stringify(st.stats));
+    UI.tone(st);
+    UI.refreshSpots(st, H);
     if (Net.isOnline()) Net.progress(st);
   }
 
   function onChoice(id) {
+    GameAudio.unlock();
     var before = state();
     var beforeWorld = before.world;
     var beforeStats = before.stats;
+    var beforeScene = before.scene;
+
+    /* 이 선택이 "방 안의 한 지점"이었는지 미리 찾아둔다 */
+    var spot = null;
+    Engine.choices(before).forEach(function (o) { if (o.id === id && o.spot) spot = o.spot; });
+
     var after = Engine.apply(before, id);
     seat().state = after;
 
@@ -200,17 +230,38 @@
 
     /* 기억 조각 알림 */
     if ((after.stats.memory || 0) > (beforeStats.memory || 0)) {
+      Sfx.play('find');
       UI.toast('🧩 그해 여름의 조각을 찾았다 (' + after.stats.memory + '개)');
     }
 
+    /* 살펴본 것: 문장을 띄우고, 종이가 나왔으면 펼친다 */
+    if (spot) {
+      Sfx.play(spot.doc ? 'drawer' : 'click');
+      UI.showObserve(spot.text || [], spot.doc ? '— 손에 쥐고 읽는다' : null);
+      if (spot.doc) {
+        setTimeout(function () { UI.openDoc(spot.doc, seat().state); }, 620);
+        UI.toast('🗂️ 보관함에 들어왔습니다 — ' + UI.esc(Story.doc(spot.doc).title), 2600);
+      }
+    }
+
     if (Game.mode !== 'online') autoSave();
-    draw();
+
+    /* 방에 머무는 경우엔 무대를 다시 그리지 않는다 */
+    if (spot && after.scene === beforeScene && Engine.scene(after).type === 'look') {
+      lookUpdate(after);
+    } else {
+      draw();
+    }
   }
 
   /* =======================================================
    *  엔딩
    * ===================================================== */
   function onEnding(st) {
+    UI.hideLook();
+    UI.tone(st);
+    Ambience.set(Engine.scene(st).mood || 'night', 2.4);
+    Sfx.play('stamp');
     var s = seat();
     s.done = true;
     s.ending = st.ending;
@@ -525,6 +576,22 @@
     toTitle();
   });
   $('btn-drawer-close').addEventListener('click', UI.closeDrawer);
+
+  $('btn-docs').addEventListener('click', function () {
+    UI.renderArchive(state(), function (id) { UI.openDoc(id, state()); });
+  });
+
+  $('btn-sound').addEventListener('click', function () {
+    GameAudio.unlock();
+    var m = GameAudio.mute();
+    $('btn-sound').textContent = m ? '🔇' : '🔊';
+    UI.toast(m ? '소리를 껐습니다' : '소리를 켰습니다');
+  });
+
+  $('doc-close').addEventListener('click', UI.closeDoc);
+  $('doc-layer').addEventListener('click', function (e) {
+    if (e.target === $('doc-layer')) UI.closeDoc();
+  });
   $('btn-reset-dex').addEventListener('click', function () {
     Save.resetDex(); UI.renderDex(); UI.toast('도감을 초기화했습니다');
   });
@@ -549,15 +616,38 @@
   /* 키보드 */
   document.addEventListener('keydown', function (e) {
     if (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
-    if (e.key === 'Escape') { UI.closeDrawer(); return; }
-    if (!$('screen-play').classList.contains('active')) return;
-    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); UI.revealNext(); return; }
-    if (/^[1-9]$/.test(e.key)) {
-      var btns = $('choices').querySelectorAll('.choice');
-      var b = btns[parseInt(e.key, 10) - 1];
-      if (b) b.click();
+    if (e.key === 'Escape') {
+      if (UI.closeDoc()) return;
+      UI.closeDrawer(); return;
     }
+    if (UI.docOpen()) { if (e.key === ' ' || e.key === 'Enter') UI.closeDoc(); return; }
+    if (!$('screen-play').classList.contains('active')) return;
+
+    var looking = !$('explore').hidden;
+    if (/^[1-9]$/.test(e.key)) {
+      var list = looking ? $('spots').querySelectorAll('.spot')
+                         : $('choices').querySelectorAll('.choice');
+      var b = list[parseInt(e.key, 10) - 1];
+      if (b) b.click();
+      return;
+    }
+    if (looking) {
+      if (e.key === 'Enter' || e.key === ' ') {     // 나가기
+        e.preventDefault();
+        var exit = $('look-exits').querySelector('.btn');
+        if (exit) exit.click();
+      }
+      return;
+    }
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); UI.revealNext(); return; }
   });
+
+  /* 소리는 첫 클릭에서 깨운다(브라우저 정책) */
+  document.addEventListener('pointerdown', function once() {
+    GameAudio.unlock();
+    document.removeEventListener('pointerdown', once);
+  });
+  UI.bindParallax();
 
   /* 시작 */
   toTitle();

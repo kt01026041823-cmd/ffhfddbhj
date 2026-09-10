@@ -62,22 +62,14 @@
     ]
   },
   {
-    id: 'fire_4', chapter: '2화 · 보관실', place: '해원소방서 장비보관실', mood: 'night', at: 0.28,
+    id: 'fire_4', chapter: '2화 · 보관실', place: '해원소방서', mood: 'night', at: 0.28,
     text: [
       '지훈은 2도 화상, 3주 진단. 살았다.',
-      '보고서를 쓰다 만 새벽, 민재는 보관실 제일 아래 칸을 열었다. 폐기 대기 장비들이 쌓인 칸이었다.',
-      '거기 헬멧 하나가 있었다. 낡고, 앞면이 녹아 일그러진 것.',
-      '내부 표기: 「해원 3-7」. 그리고 유성펜으로 눌러 쓴 두 글자, 「상철」.',
-      '민재는 그 헬멧을 15년 전 여름에 본 적이 있다. 창고 밖, 담벼락 옆 땅바닥에서.'
+      '보고서를 쓰다 만 새벽 네 시, 민재는 장비보관실 문을 열었다.',
+      '제일 아래 칸은 폐기 대기 장비들이 쌓이는 자리다. 15년쯤 아무도 손대지 않은 칸.'
     ],
-    onEnter: { add: { memory: 1 } },
     choices: [
-      { id: 'fire_4:a', t: '「해원 3-7」 배정 기록을 뒤진다',
-        add: { memory: 1, faith: 1 }, set: { traced_helmet: true }, world: 'w_name_hint', to: 'fire_5' },
-      { id: 'fire_4:b', t: '헬멧을 내 사물함으로 옮긴다. 폐기 목록에서 지운다',
-        add: { faith: 1, bond: 1 }, set: { kept_helmet: true }, to: 'fire_5' },
-      { id: 'fire_4:c', t: '사진만 찍고 닫는다. 지금은 근무 중이다',
-        add: { scar: 1 }, to: 'fire_5' }
+      { id: 'fire_4:go', t: '불을 켠다', to: 'room_f_gear' }
     ]
   },
   {
@@ -144,28 +136,24 @@
     ],
     choices: [
       { id: 'fire_8:a', t: '들어간다. 명령을 어긴다',
-        add: { faith: 3, scar: 2, memory: 1 }, set: { disobeyed: true }, to: 'fire_9' },
+        add: { faith: 3, scar: 2, memory: 1 }, set: { disobeyed: true }, to: 'room_f_house' },
       { id: 'fire_8:b', t: '태오의 부대와 함께 진입로 양쪽을 물로 눌러 길을 만든다',
         req: { any: [{ flag: 'trusted_army' }, { flag: 'side_by_side' }, { world: 'w_army_relief' }] },
-        add: { faith: 2, bond: 2 }, set: { made_path: true }, to: 'fire_9' },
+        add: { faith: 2, bond: 2 }, set: { made_path: true }, to: 'room_f_house' },
       { id: 'fire_8:c', t: '명령을 따른다. 내 대원들을 죽일 수 없다',
-        add: { faith: 1, scar: 3 }, set: { obeyed: true }, to: 'fire_9' }
+        add: { faith: 1, scar: 3 }, set: { obeyed: true }, to: 'room_f_house' }
     ]
   },
   {
-    id: 'fire_9', chapter: '5화 · 3분', place: '마지막 가옥', mood: 'fire', at: 0.62,
+    id: 'fire_9', chapter: '5화 · 3분', place: '마지막 가옥 · 진입로', mood: 'fire', at: 0.62,
     text: [
-      '집 안에 노인은 없었다. 이미 이웃이 업고 내려간 뒤였다.',
-      '대신 벽에 걸린 사진이 있었다. 소방 정복을 입은 젊은 남자와, 어린 아들.',
-      '사진 아래 명패. 「1998년 임용 · 한상철」.',
-      '민재는 사진을 떼어 방화복 안에 넣었다.'
+      '나오는 길은 들어간 길보다 좁아져 있었다.',
+      '민재는 방화복 안쪽을 한 번 눌러 확인하고 뛰었다.',
+      '무전이 잔여 시간을 세는 소리가, 열두 살 때 벽을 뜯던 소리와 겹쳐 들렸다.'
     ],
-    onEnter: { add: { memory: 1 } },
     choices: [
-      { id: 'fire_9:a', t: '사진을 가지고 나온다. 반드시 돌려줄 것이다',
-        add: { faith: 2, bond: 1 }, set: { got_photo: true }, world: 'w_name_hint', to: 'fire_10' },
-      { id: 'fire_9:b', t: '사진을 제자리에 두고, 위치만 기억한다',
-        add: { faith: 1 }, to: 'fire_10' }
+      { id: 'fire_9:a', t: '끝까지 뛴다', add: { faith: 1 }, to: 'fire_10' },
+      { id: 'fire_9:b', t: '한 번 뒤를 돌아본다', add: { scar: 1, memory: 1 }, to: 'fire_10' }
     ]
   },
   {
