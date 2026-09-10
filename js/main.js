@@ -111,8 +111,12 @@
       $('select-title').textContent = j.job + ' — 어떤 모습인가요?';
       $('select-hint').textContent = '고른 모습으로 이야기 내내 등장합니다.';
       $('gender-quote').textContent = JOB_QUOTE[sel.route] || '';
-      $('gfig-m').innerHTML = Cast.figure(sel.route, 'm');
-      $('gfig-f').innerHTML = Cast.figure(sel.route, 'f');
+      ['m', 'f'].forEach(function (g) {
+        var art = global.Art && Art.bust[sel.route] && Art.bust[sel.route][g];
+        $('gfig-' + g).innerHTML = art
+          ? '<img alt="" src="' + art + '">'          /* 보내주신 일러스트 */
+          : Cast.figure(sel.route, g);                /* 없으면 치비로 */
+      });
       drawGender();
       $('btn-start').disabled = false;
     } else {

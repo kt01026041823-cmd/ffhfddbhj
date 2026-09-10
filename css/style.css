@@ -634,22 +634,23 @@ kbd{
 
 /* 직업 카드: 고른 것만 밝게, 나머지는 물러난다 */
 .job{
-  min-height:290px; padding:0; overflow:hidden; position:relative;
+  min-height:340px; padding:0; overflow:hidden; position:relative;
   display:flex; flex-direction:column; justify-content:flex-end;
-  background-size:cover; background-position:50% 12%;
-  filter:grayscale(.45) brightness(.42) contrast(.95);
+  background-color:#0c0f16;
+  background-size:contain; background-position:50% 0; background-repeat:no-repeat;
+  filter:grayscale(.28) brightness(.72) contrast(1);
   transition:filter .3s ease, transform .25s ease, box-shadow .3s ease;
 }
 .job::before{
   content:""; position:absolute; inset:0;
-  background:linear-gradient(180deg,rgba(8,10,15,.10) 0%,rgba(8,10,15,.55) 55%,rgba(8,10,15,.94) 100%);
+  background:linear-gradient(180deg,rgba(8,10,15,0) 0%,rgba(8,10,15,.06) 58%,rgba(8,10,15,.86) 88%,rgba(8,10,15,.97) 100%);
 }
 .job > *{position:relative; z-index:1}
 .job .ic{position:absolute; top:12px; left:14px; font-size:1.4rem; z-index:2}
 .job .jb{font-size:1.15rem; padding:0 14px}
 .job .nm{padding:0 14px}
 .job .tg{padding:0 14px 14px}
-.job:hover{filter:grayscale(.15) brightness(.72); transform:translateY(-3px)}
+.job:hover{filter:grayscale(0) brightness(.92); transform:translateY(-3px)}
 .job.sel{
   filter:none;                                   /* 고른 사람만 제 색으로 */
   border-color:var(--c);
@@ -657,7 +658,7 @@ kbd{
   transform:translateY(-3px);
 }
 .job.sel::after{opacity:1; height:4px}
-.jobs.compact .job{min-height:170px; background-position:50% 8%}
+.jobs.compact .job{min-height:210px; background-size:contain}
 
 /* 성별 */
 .field-label{display:block; font-size:.78rem; color:var(--ink-dim); margin-bottom:6px}
@@ -834,8 +835,9 @@ kbd{
   background:var(--panel); padding:0 0 12px; cursor:pointer; overflow:hidden;
   font-family:inherit; color:var(--ink-dim); transition:.2s;
 }
-.gcard .gfig{height:min(38vh,300px); display:flex; align-items:flex-end; justify-content:center}
-.gcard .gfig svg{height:100%; width:auto}
+.gcard .gfig{height:min(44vh,360px); overflow:hidden; background:#0c0f16}
+.gcard .gfig img{width:100%; height:100%; object-fit:cover; object-position:50% 14%; display:block}
+.gcard .gfig svg{height:100%; width:auto; margin:0 auto; display:block}
 .gcard span{display:block; font-size:1rem; letter-spacing:.08em}
 .gcard:hover{background:rgba(255,255,255,.07); color:var(--ink)}
 .gcard.on{
@@ -854,4 +856,4 @@ kbd{
   background:var(--panel); font-size:.92rem; color:var(--ink-dim); line-height:1.9;
 }
 .summary b{color:var(--ink); font-weight:600}
-@media (max-width:560px){ .gcard .gfig{height:30vh} }
+@media (max-width:560px){ .gcard .gfig{height:34vh} .job{min-height:300px} }
