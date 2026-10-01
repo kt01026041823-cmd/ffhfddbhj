@@ -18,6 +18,7 @@
   /*
    * 사전주문 코드: 메뉴코드+수량 - 픽업시간 - 전화 뒷자리 - 이름
    * 예) A2D1-1030-1234-김민수  (레몬에이드 2, 쿠키 1, 10:30 픽업)
+   *     픽업시간이 0000 이면 예약이 아닌 '현장 주문'입니다.
    * 사람이 읽고 손으로도 입력할 수 있게 일부러 단순하게 만들었습니다.
    */
   function encodePreorder({ cart, time, phone, name }) {
@@ -26,7 +27,7 @@
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([c, q]) => c + q)
       .join("");
-    return [items, time.replace(":", ""), phone, name.replace(/[\s-]+/g, "")].join("-");
+    return [items, time ? time.replace(":", "") : "0000", phone, name.replace(/[\s-]+/g, "")].join("-");
   }
 
   function decodePreorder(text) {

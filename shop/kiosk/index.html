@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>키오스크</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  /* 화면은 세로형 키오스크(9:16) 비율. 1rem = 화면 너비의 1/48 (자동 조절) */
+  :root {
+    --accent: #0B6E4F; --accent-dark: #07543C;
+    --bg: #f2f3f5; --surface: #fff; --ink: #121212; --sub: #6e6e73; --faint: #a8a8ad;
+    --line: #e3e3e6; --tile: #f5f5f7; --danger: #d92d20;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body { background: #18181b; overflow: hidden; user-select: none; font-family: Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; color: var(--ink); letter-spacing: -0.02em; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  input { font: inherit; color: inherit; user-select: text; }
+  .hidden { display: none !important; }
+  svg.ic { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  #frame { position: relative; height: 100%; margin: 0 auto; background: var(--bg); overflow: hidden; }
+  .screen { position: absolute; inset: 0; display: none; flex-direction: column; }
+  .screen.on { display: flex; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; } }
+
+  /* 공통 */
+  .bar { flex: none; height: 6.4rem; display: flex; align-items: center; gap: 1.2rem; padding: 0 2rem; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .bar .brand { font-weight: 800; font-size: 2rem; }
+  .bar .pill { font-size: 1.5rem; font-weight: 700; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, white); padding: .5rem 1.2rem; border-radius: 99rem; }
+  .bar .home { margin-left: auto; display: flex; align-items: center; gap: .6rem; height: 4.4rem; padding: 0 1.6rem; border-radius: 1rem; border: 1px solid var(--line); font-size: 1.6rem; color: var(--sub); }
+  .bar .home svg { width: 2rem; height: 2rem; }
+  .title { padding: 3.6rem 2.4rem 2.4rem; }
+  .title h1 { margin: 0; font-size: 3.4rem; font-weight: 800; line-height: 1.25; }
+  .title p { margin: .8rem 0 0; font-size: 1.8rem; color: var(--sub); }
+  .foot { flex: none; display: flex; gap: 1rem; padding: 1.6rem 2rem 2rem; background: var(--surface); border-top: 1px solid var(--line); }
+  .btn { height: 7rem; border-radius: 1.4rem; font-size: 2.2rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: .8rem; }
+  .btn.pri { background: var(--accent); color: #fff; flex: 2; }
+  .btn.sec { background: var(--tile); color: var(--ink); flex: 1; border: 1px solid var(--line); }
+  .btn.dark { background: var(--ink); color: #fff; }
+  .btn:disabled { background: #d4d4d8; color: #fff; }
+  .btn:active:not(:disabled), .press:active { transform: scale(.98); }
+  .scroll { flex: 1; overflow-y: auto; min-height: 0; }
+
+  /* ── 대기 화면 ── */
+  #attract { background: var(--accent); color: #fff; }
+  #attract .top { display: flex; justify-content: space-between; align-items: center; padding: 3rem 3rem 0; }
+  #attract .top .brand { font-weight: 800; font-size: 2.2rem; }
+  #attract .top .lang { font-size: 1.5rem; opacity: .7; }
+  #attract .hero { padding: 4rem 3rem 0; }
+  #attract .hero small { font-size: 1.8rem; opacity: .75; font-weight: 500; }
+  #attract .hero h1 { font-size: 4.6rem; line-height: 1.15; margin: 1rem 0 0; font-weight: 800; letter-spacing: -0.04em; }
+  .show { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
+  .show .disc { width: 22rem; height: 22rem; border-radius: 50%; background: rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 11rem; overflow: hidden; position: relative; }
+  .show .disc::before { content: ""; position: absolute; inset: 2.4rem; border-radius: 50%; background: rgba(255,255,255,.14); }
+  .show .disc span, .show .disc img { position: relative; }
+  .show .disc img { width: 100%; height: 100%; object-fit: cover; }
+  .show .n { font-size: 2.8rem; font-weight: 700; margin-top: 2rem; }
+  .show .p { font-size: 2.2rem; opacity: .8; margin-top: .4rem; }
+  .show .dots { display: flex; gap: .8rem; margin-top: 2rem; }
+  .show .dots i { width: .8rem; height: .8rem; border-radius: 1rem; background: rgba(255,255,255,.35); transition: width .3s; }
+  .show .dots i.on { width: 2.4rem; background: #fff; }
+  .swap { animation: swap .5s ease; }
+  @keyframes swap { from { opacity: 0; transform: translateY(1.6rem); } }
+  .touch { margin: 0 2.4rem 2.4rem; background: #fff; color: var(--ink); border-radius: 2.4rem; height: 12rem; display: flex; align-items: center; justify-content: center; gap: 1.6rem; font-size: 3rem; font-weight: 800; }
+  .touch svg { width: 5rem; height: 5rem; color: var(--accent); animation: tap 1.6s ease-in-out infinite; }
+  @keyframes tap { 50% { transform: translateY(-.8rem); } }
+  .ready { flex: none; display: flex; align-items: center; gap: 1.4rem; padding: 1.6rem 3rem 2.4rem; background: var(--accent-dark); min-height: 7rem; }
+  .ready b { font-size: 1.6rem; font-weight: 600; opacity: .8; flex: none; }
+  .ready .nums { display: flex; flex-wrap: wrap; gap: .8rem; }
+  .ready .nums span:not(.none) { font-size: 2.4rem; font-weight: 800; background: #fff; color: var(--accent-dark); padding: .2rem 1.4rem; border-radius: .8rem; }
+  .ready .none { font-size: 1.5rem; opacity: .6; white-space: nowrap; }
+  .hot { position: absolute; top: 0; right: 0; width: 8rem; height: 8rem; z-index: 2; }
+  .guest-link { text-align: center; padding: 0 0 2.4rem; font-size: 1.6rem; }
+  .guest-link a { color: #fff; opacity: .8; }
+
+  /* ── 주문 방법 ── */
+  .types { padding: 0 2.4rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+  .type { background: var(--surface); border-radius: 2.4rem; padding: 3.2rem 2.4rem; text-align: left; display: flex; flex-direction: column; gap: 1.6rem; min-height: 26rem; border: 2px solid transparent; box-shadow: 0 .2rem .8rem rgba(0,0,0,.04); }
+  .type svg { width: 7rem; height: 7rem; color: var(--accent); stroke-width: 1.3; }
+  .type .t { font-size: 3rem; font-weight: 800; margin-top: auto; }
+  .type .d { font-size: 1.7rem; color: var(--sub); margin-top: -1rem; }
+  .type.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; min-height: 0; padding: 2.8rem; }
+  .type.wide .t { margin: 0; }
+  .type.wide .d { margin: .4rem 0 0; }
+  .type.wide .arr { margin-left: auto; font-size: 3rem; color: var(--faint); }
+  .type.sub { background: transparent; box-shadow: none; border: 1px solid var(--line); }
+  .type.sub svg { width: 4.4rem; height: 4.4rem; color: var(--sub); }
+  .type.sub .t { font-size: 2.2rem; }
+  .type.disabled { opacity: .35; pointer-events: none; }
+
+  /* ── 메뉴 ── */
+  .tabs { flex: none; display: flex; gap: .4rem; padding: 0 1.6rem; background: var(--surface); border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tabs button { flex: none; height: 6rem; padding: 0 2rem; font-size: 2rem; color: var(--sub); font-weight: 600; border-bottom: .4rem solid transparent; }
+  .tabs button.on { color: var(--ink); border-color: var(--ink); font-weight: 800; }
+  .grid { padding: 1.6rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; align-content: start; }
+  .item { background: var(--surface); border-radius: 1.6rem; overflow: hidden; text-align: left; position: relative; }
+  .item .ph { aspect-ratio: 1; background: var(--tile); display: flex; align-items: center; justify-content: center; font-size: 6.4rem; }
+  .item .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .item .in { padding: 1.2rem 1.4rem 1.6rem; }
+  .item .n { font-size: 1.75rem; font-weight: 700; line-height: 1.3; min-height: 4.6rem; }
+  .item .p { font-size: 1.9rem; font-weight: 800; color: var(--accent); margin-top: .4rem; }
+  .item .best { position: absolute; top: 1rem; left: 1rem; font-size: 1.3rem; font-weight: 700; background: var(--ink); color: #fff; padding: .3rem .9rem; border-radius: .6rem; }
+  .item .cnt { position: absolute; top: 1rem; right: 1rem; min-width: 3.4rem; height: 3.4rem; border-radius: 2rem; background: var(--accent); color: #fff; font-weight: 800; font-size: 1.7rem; display: flex; align-items: center; justify-content: center; }
+  .item.out .ph { filter: grayscale(1); opacity: .4; }
+  .item.out::after { content: "품절"; position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,.75); color: #fff; font-size: 1.8rem; font-weight: 800; padding: .6rem 1.6rem; border-radius: .8rem; }
+
+  .cart { flex: none; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -.4rem 2rem rgba(0,0,0,.06); }
+  .cart .head { display: flex; justify-content: space-between; align-items: center; padding: 1.4rem 2rem .6rem; font-size: 1.7rem; font-weight: 700; }
+  .cart .head button { font-size: 1.5rem; color: var(--sub); font-weight: 500; }
+  .cart .list { height: 17rem; overflow-y: auto; padding: 0 2rem; }
+  .cart .empty { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 1.7rem; }
+  .crow { display: flex; align-items: center; gap: 1.2rem; height: 5.6rem; border-bottom: 1px solid var(--line); font-size: 1.8rem; }
+  .crow .n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .crow .p { width: 10rem; text-align: right; font-weight: 700; }
+  .crow .x { width: 3.6rem; height: 3.6rem; color: var(--faint); font-size: 2rem; }
+  .stepper { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 1rem; }
+  .stepper button { width: 4.4rem; height: 4.2rem; font-size: 2.2rem; color: var(--sub); }
+  .stepper span { width: 3.4rem; text-align: center; font-weight: 800; }
+  .cart .sum { display: flex; align-items: center; gap: 1.6rem; padding: 1.6rem 2rem 2rem; }
+  .cart .sum .total { flex: 1; }
+  .cart .sum .total small { display: block; font-size: 1.5rem; color: var(--sub); }
+  .cart .sum .total b { font-size: 3.2rem; font-weight: 800; }
+  .cart .sum .btn { width: 22rem; flex: none; }
+
+  /* 상품 팝업 / 알림 */
+  .modal { position: absolute; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: flex-end; z-index: 20; }
+  .modal.on { display: flex; }
+  .modal.center { align-items: center; justify-content: center; padding: 3rem; }
+  .sheet { width: 100%; background: var(--surface); border-radius: 3rem 3rem 0 0; padding: 3.2rem 2.8rem 2.4rem; animation: up .25s ease; }
+  @keyframes up { from { transform: translateY(30%); opacity: 0; } }
+  .sheet .ph { height: 24rem; border-radius: 2rem; background: var(--tile); display: flex; align-items: center; justify-content: center; font-size: 12rem; overflow: hidden; }
+  .sheet .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .sheet h2 { font-size: 3rem; margin: 2.4rem 0 .4rem; font-weight: 800; }
+  .sheet .d { font-size: 1.8rem; color: var(--sub); }
+  .sheet .row { display: flex; justify-content: space-between; align-items: center; margin: 2.8rem 0; }
+  .sheet .row .price { font-size: 3rem; font-weight: 800; }
+  .sheet .stepper button { width: 6rem; height: 6rem; font-size: 3rem; }
+  .sheet .stepper span { width: 5rem; font-size: 2.6rem; }
+  .sheet .acts { display: flex; gap: 1rem; }
+  .alert { width: 100%; background: var(--surface); border-radius: 2.4rem; padding: 4rem 3rem 2.8rem; text-align: center; animation: fade .2s; }
+  .alert h3 { font-size: 2.8rem; margin: 0 0 1rem; }
+  .alert p { font-size: 1.9rem; color: var(--sub); margin: 0 0 3rem; line-height: 1.5; }
+  .alert .big { font-size: 7rem; font-weight: 800; color: var(--accent); line-height: 1; margin: 0 0 1.6rem; }
+  .alert .acts { display: flex; gap: 1rem; }
+
+  /* ── 주문 확인 ── */
+  .card { background: var(--surface); border-radius: 2rem; margin: 0 2.4rem 1.6rem; padding: .8rem 2.4rem; }
+  .card .r { display: flex; justify-content: space-between; padding: 1.8rem 0; border-bottom: 1px solid var(--line); font-size: 2rem; }
+  .card .r:last-child { border: 0; }
+  .card .r b { font-weight: 700; }
+  .card .r.tot { font-size: 2.2rem; font-weight: 800; }
+  .card .r.tot b { font-size: 3rem; color: var(--accent); font-weight: 800; }
+  .fld { margin: 0 2.4rem 2.4rem; }
+  .fld > label { display: block; font-size: 1.8rem; font-weight: 700; margin-bottom: 1rem; }
+  .fld > label small { font-weight: 400; color: var(--sub); margin-left: .6rem; }
+  .fld input { width: 100%; height: 7rem; border-radius: 1.4rem; border: 1px solid var(--line); background: var(--surface); padding: 0 2rem; font-size: max(16px, 2.2rem); outline: none; }
+  .fld input:focus { border: 2px solid var(--ink); }
+  .opts { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; }
+  .opt { height: 6.4rem; border-radius: 1.2rem; background: var(--surface); border: 1px solid var(--line); font-size: 2rem; font-weight: 600; }
+  .opt.on { border: .3rem solid var(--accent); color: var(--accent); font-weight: 800; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0 2.4rem; }
+  .two .fld { margin: 0 0 2.4rem; }
+  .err { color: var(--danger); font-size: 1.7rem; text-align: center; min-height: 2.4rem; padding: 0 2.4rem; }
+
+  /* ── 결제 ── */
+  .paybox { margin: 0 2.4rem 2.4rem; background: var(--ink); color: #fff; border-radius: 2rem; padding: 2.4rem 2.8rem; display: flex; justify-content: space-between; align-items: center; }
+  .paybox span { font-size: 1.9rem; opacity: .8; }
+  .paybox b { font-size: 4rem; font-weight: 800; }
+  .pays { padding: 0 2.4rem; display: grid; gap: 1.2rem; }
+  .pay { background: var(--surface); border-radius: 2rem; padding: 2.8rem; display: flex; align-items: center; gap: 2.4rem; text-align: left; }
+  .pay .icb { width: 8rem; height: 8rem; border-radius: 2rem; background: color-mix(in srgb, var(--accent) 10%, white); color: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; }
+  .pay svg { width: 4.6rem; height: 4.6rem; }
+  .pay .t { font-size: 2.6rem; font-weight: 800; }
+  .pay .d { font-size: 1.7rem; color: var(--sub); margin-top: .2rem; }
+  .pay .arr { margin-left: auto; font-size: 3rem; color: var(--faint); }
+
+  /* ── 완료 / 번호표 ── */
+  #done { background: var(--surface); }
+  .done-top { text-align: center; padding: 4.8rem 2.4rem 2.4rem; }
+  .done-top h1 { font-size: 3.4rem; font-weight: 800; margin: 0; }
+  .done-top p { font-size: 1.9rem; color: var(--sub); margin: .8rem 0 0; }
+  .printer { margin: 0 auto; width: 38rem; position: relative; flex: 1; min-height: 0; }
+  .printer .slot { height: 2.4rem; border-radius: 1.2rem; background: #2a2a2e; position: relative; z-index: 2; box-shadow: inset 0 -.4rem 0 #111; }
+  .paper-wrap { position: absolute; top: 1.2rem; left: 2rem; right: 2rem; bottom: 0; overflow: hidden; }
+  .paper { background: #fff; border: 1px solid var(--line); border-top: 0; padding: 3.2rem 2.8rem 3.6rem; text-align: center; font-size: 1.7rem; transform: translateY(-100%); animation: print 1.6s .2s cubic-bezier(.3,.7,.3,1) forwards; box-shadow: 0 1rem 2rem rgba(0,0,0,.08);
+    -webkit-mask: linear-gradient(#000 0 0) top / 100% calc(100% - 1.2rem) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 2.4rem 1.2rem repeat-x;
+            mask: linear-gradient(#000 0 0) top / 100% calc(100% - 1.2rem) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 2.4rem 1.2rem repeat-x; }
+  @keyframes print { to { transform: translateY(0); } }
+  .paper .shop { font-weight: 800; font-size: 2rem; }
+  .paper .kind { color: var(--sub); margin-top: .4rem; }
+  .paper hr { border: 0; border-top: 2px dashed var(--line); margin: 2rem 0; }
+  .paper .lbl { color: var(--sub); }
+  .paper .no { font-size: 11rem; font-weight: 900; line-height: 1; letter-spacing: -0.05em; margin: .4rem 0; }
+  .paper .code { font-size: 2.6rem; font-weight: 800; word-break: break-all; margin: 1rem 0; padding: 1.4rem; border: 2px dashed var(--ink); border-radius: 1rem; user-select: all; }
+  .paper .li { display: flex; justify-content: space-between; text-align: left; padding: .3rem 0; }
+  .paper .li.t { font-weight: 800; font-size: 2rem; margin-top: .8rem; }
+  .paper .when { color: var(--faint); font-size: 1.4rem; margin-top: 1.6rem; }
+  .done-guide { text-align: center; font-size: 1.9rem; padding: 2rem 3rem 0; line-height: 1.5; }
+  .done-count { text-align: center; color: var(--faint); font-size: 1.5rem; padding: 1rem 0 0; }
+
+  /* ── 예약 확인 ── */
+  .pad-show { display: flex; justify-content: center; gap: 1.6rem; margin: 0 0 2.4rem; }
+  .pad-show span { width: 7rem; height: 8.4rem; border-bottom: .4rem solid var(--line); font-size: 5.4rem; font-weight: 800; text-align: center; }
+  .pad-show span.f { border-color: var(--ink); }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding: 0 2.4rem; }
+  .keypad button { height: 8.4rem; border-radius: 1.6rem; background: var(--surface); font-size: 3.4rem; font-weight: 700; }
+  .keypad button.fn { font-size: 1.9rem; color: var(--sub); }
+  .res { background: var(--surface); border-radius: 2rem; margin: 0 2.4rem 1.2rem; padding: 2.4rem; display: flex; gap: 2.4rem; align-items: center; border: .3rem solid var(--accent); }
+  .res .no { font-size: 5rem; font-weight: 900; min-width: 9rem; text-align: center; }
+  .res .t { font-size: 2.2rem; font-weight: 800; }
+  .res .m { font-size: 1.7rem; color: var(--sub); margin-top: .3rem; }
+  .msg { text-align: center; color: var(--sub); font-size: 1.8rem; padding: 1.6rem 2.4rem; line-height: 1.5; }
+  .codebox { display: flex; gap: 1rem; margin: 0 2.4rem; }
+  .codebox input { flex: 1; min-width: 0; height: 6.4rem; border-radius: 1.2rem; border: 1px solid var(--line); padding: 0 1.6rem; font-size: max(16px, 1.9rem); background: var(--surface); }
+  .codebox .btn { height: 6.4rem; padding: 0 2.4rem; font-size: 2rem; }
+
+  .toast { position: absolute; left: 50%; top: 9rem; transform: translateX(-50%); background: rgba(18,18,18,.92); color: #fff; padding: 1.6rem 2.8rem; border-radius: 1.4rem; font-size: 1.8rem; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 40; white-space: nowrap; }
+  .toast.on { opacity: 1; }
+
+  /* ───────── 관리자 (화면 전체, px 단위) ───────── */
+  .layer { position: fixed; inset: 0; background: #f4f4f5; display: none; flex-direction: column; z-index: 100; font-size: 16px; }
+  .layer.on { display: flex; }
+  .a-bar { height: 68px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 20px; background: #fff; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .a-bar .a-brand { font-weight: 800; font-size: 18px; margin-right: 8px; }
+  .a-tabs { display: flex; gap: 4px; }
+  .a-tabs button { height: 40px; padding: 0 14px; border-radius: 8px; font-size: 15px; color: var(--sub); }
+  .a-tabs button.on { background: var(--ink); color: #fff; font-weight: 700; }
+  .a-link { height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; color: var(--sub); display: inline-flex; align-items: center; text-decoration: none; background: #fff; }
+  .a-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .a-tool { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .a-tool input { flex: 1; min-width: 220px; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 15px; }
+  .a-btn { height: 44px; padding: 0 16px; border-radius: 8px; font-size: 15px; font-weight: 600; background: var(--ink); color: #fff; }
+  .a-btn.line { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .a-group { font-size: 17px; font-weight: 800; margin: 22px 0 10px; }
+  .a-group:first-child { margin-top: 0; }
+  .a-group small { font-weight: 400; color: var(--sub); margin-left: 8px; font-size: 14px; }
+  .a-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .oc { background: #fff; border-radius: 12px; padding: 16px; border: 1px solid var(--line); display: flex; flex-direction: column; }
+  .oc.ready { border: 2px solid var(--accent); }
+  .oc.closed { opacity: .5; }
+  .oc .top { display: flex; justify-content: space-between; align-items: center; }
+  .oc .no { font-size: 28px; font-weight: 900; }
+  .tag { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: var(--tile); color: var(--sub); }
+  .tag.paid { background: #e7f4ee; color: var(--accent); }
+  .tag.unpaid { background: #fdecea; color: var(--danger); }
+  .oc .who { color: var(--sub); font-size: 14px; margin-top: 2px; }
+  .oc ul { list-style: none; margin: 10px 0; padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 16px; flex: 1; }
+  .oc li { display: flex; justify-content: space-between; padding: 2px 0; }
+  .oc .meta { font-size: 13px; color: var(--sub); display: flex; justify-content: space-between; }
+  .oc .acts { display: flex; gap: 6px; margin-top: 10px; }
+  .oc .acts button { flex: 1; height: 40px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; }
+  .oc .acts .main { background: var(--ink); color: #fff; border-color: var(--ink); flex: 1.4; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: #fff; border-radius: 12px; padding: 18px; border: 1px solid var(--line); }
+  .stat span { color: var(--sub); font-size: 14px; }
+  .stat b { display: block; font-size: 26px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 18px; }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); font-size: 15px; }
+  th { color: var(--sub); font-weight: 500; font-size: 13px; background: #fafafa; }
+  .rt { text-align: right; }
+  .a-empty { color: var(--sub); padding: 32px 0; text-align: center; }
+  .pin-box { margin: auto; width: min(380px, 92vw); text-align: center; }
+  .pin-box h2 { font-size: 22px; margin: 0 0 20px; }
+  .pin-dots { display: flex; justify-content: center; gap: 14px; margin-bottom: 24px; height: 20px; }
+  .pin-dots i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--faint); }
+  .pin-dots i.f { background: var(--ink); border-color: var(--ink); }
+  .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .pin-pad button { height: 64px; border-radius: 12px; background: #fff; border: 1px solid var(--line); font-size: 24px; font-weight: 700; }
+  .pin-pad button.fn { font-size: 15px; color: var(--sub); }
+  .pin-err { color: var(--danger); min-height: 22px; margin-top: 14px; }
+</style>
+</head>
+<body>
+<div id="frame">
+
+  <!-- 0. 대기 화면 -->
+  <section class="screen on" id="attract">
+    <button class="hot" id="hot" aria-label=""></button>
+    <div class="top"><span class="brand" data-name></span><span class="lang">KOR</span></div>
+    <div class="hero"><small id="tagline"></small><h1>주문하시려면<br>화면을 터치하세요</h1></div>
+    <div class="show" id="show"></div>
+    <button class="touch" id="touch"><svg class="ic" viewBox="0 0 24 24"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v6M12 10V8.5a1.5 1.5 0 0 1 3 0V11M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L3.5 15a1.5 1.5 0 0 1 2.5-1.6L9 16"/></svg>주문 시작하기</button>
+    <div class="ready" id="readyBar"><b>준비 완료</b><div class="nums" id="readyNums"></div></div>
+    <div class="guest-link hidden" id="guestLink"><a href="../">← 소개 페이지로</a></div>
+  </section>
+
+  <!-- 1. 주문 방법 -->
+  <section class="screen" id="type">
+    <div class="bar"><span class="brand" data-name></span><button class="home" data-home><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>처음으로</button></div>
+    <div class="scroll">
+      <div class="title"><h1>주문 방법을<br>선택해 주세요</h1><p id="typeSub">원하시는 방법을 눌러 주세요</p></div>
+      <div class="types">
+        <button class="type press" data-type="매장">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M4 10h16M6 10v9M18 10v9M8 6h8l2 4H6z"/><path d="M10 14h4"/></svg>
+          <div class="t">매장에서</div><div class="d">여기서 먹고 갈게요</div>
+        </button>
+        <button class="type press" data-type="포장">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+          <div class="t">포장하기</div><div class="d">가져갈게요</div>
+        </button>
+        <button class="type wide press" data-type="예약">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <div><div class="t">예약 주문</div><div class="d">원하는 시간에 찾아가요</div></div><span class="arr">›</span>
+        </button>
+        <button class="type wide sub press" data-go="find" id="findEntry">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/></svg>
+          <div><div class="t">예약 확인 · 주문코드 등록</div><div class="d">미리 주문하신 분은 여기를 눌러 주세요</div></div><span class="arr">›</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 메뉴 -->
+  <section class="screen" id="menu">
+    <div class="bar"><span class="brand" data-name></span><span class="pill" id="typePill"></span><button class="home" data-home><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>처음으로</button></div>
+    <nav class="tabs" id="tabs"></nav>
+    <div class="scroll"><div class="grid" id="grid"></div></div>
+    <div class="cart">
+      <div class="head"><span id="cartHead">주문 내역</span><button id="clearBtn">전체 삭제</button></div>
+      <div class="list" id="cartList"></div>
+      <div class="sum">
+        <div class="total"><small>총 주문 금액</small><b id="cartSum">0원</b></div>
+        <button class="btn pri" id="toConfirm" disabled>주문하기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 주문 확인 -->
+  <section class="screen" id="confirm">
+    <div class="bar"><span class="brand" data-name></span><span class="pill" id="typePill2"></span><button class="home" data-home><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>처음으로</button></div>
+    <div class="scroll">
+      <div class="title"><h1>주문 내역을<br>확인해 주세요</h1></div>
+      <div class="card" id="summary"></div>
+      <div id="timeFld" class="fld" style="margin-top:3.2rem"><label>픽업 시간</label><div class="opts" id="times"></div></div>
+      <div id="whoFld" class="two">
+        <div class="fld"><label for="fName">이름</label><input id="fName" maxlength="10" placeholder="홍길동"></div>
+        <div class="fld"><label for="fPhone">휴대폰 뒷자리</label><input id="fPhone" inputmode="numeric" maxlength="4" placeholder="1234"></div>
+      </div>
+      <div class="err" id="err"></div>
+    </div>
+    <div class="foot"><button class="btn sec" data-go="menu">이전</button><button class="btn pri" id="toPay">결제하기</button></div>
+  </section>
+
+  <!-- 4. 결제 -->
+  <section class="screen" id="pay">
+    <div class="bar"><span class="brand" data-name></span><button class="home" data-home><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>처음으로</button></div>
+    <div class="scroll">
+      <div class="title"><h1>결제 수단을<br>선택해 주세요</h1></div>
+      <div class="paybox"><span>결제 금액</span><b id="payTotal"></b></div>
+      <div class="pays" id="pays"></div>
+    </div>
+    <div class="foot"><button class="btn sec" data-go="confirm">이전</button></div>
+  </section>
+
+  <!-- 5. 완료 -->
+  <section class="screen" id="done">
+    <div class="done-top"><h1 id="doneTitle"></h1><p id="doneSub"></p></div>
+    <div class="printer"><div class="slot"></div><div class="paper-wrap"><div class="paper" id="paper"></div></div></div>
+    <div class="done-guide" id="doneGuide"></div>
+    <div class="foot" style="border:0" id="doneActs"></div>
+    <div class="done-count" id="doneCount" style="padding-bottom:2rem"></div>
+  </section>
+
+  <!-- 예약 확인 -->
+  <section class="screen" id="find">
+    <div class="bar"><span class="brand">예약 확인</span><button class="home" data-home><svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>처음으로</button></div>
+    <div class="scroll">
+      <div class="title"><h1>휴대폰 번호<br>뒷자리를 눌러 주세요</h1></div>
+      <div class="pad-show" id="findShow"></div>
+      <div id="findRes"></div>
+      <div class="keypad" id="findPad"></div>
+      <div class="title" style="padding-bottom:1.6rem"><p style="font-weight:700;color:var(--ink)">초대장 · 앱에서 받은 주문코드가 있나요?</p></div>
+      <div class="codebox"><input id="codeIn" placeholder="예) A2D1-1030-1234-홍길동"><button class="btn dark" id="codeBtn">등록</button></div>
+      <div class="err" id="codeErr" style="margin:1rem 0 3rem"></div>
+    </div>
+  </section>
+
+  <!-- 상품 팝업 -->
+  <div class="modal" id="itemModal"><div class="sheet" id="itemSheet"></div></div>
+  <!-- 시간 초과 -->
+  <div class="modal center" id="idleModal">
+    <div class="alert"><h3>주문을 계속하시겠어요?</h3><div class="big" id="idleCount">10</div><p>응답이 없으면 처음 화면으로 돌아갑니다.</p>
+      <div class="acts"><button class="btn sec" data-home>처음으로</button><button class="btn pri" id="idleKeep">계속하기</button></div></div>
+  </div>
+  <!-- 확인창 -->
+  <div class="modal center" id="askModal">
+    <div class="alert"><h3 id="askTitle"></h3><p id="askText"></p>
+      <div class="acts"><button class="btn sec" id="askNo">아니요</button><button class="btn pri" id="askYes">네</button></div></div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<!-- 관리자 비밀번호 -->
+<div class="layer" id="pinLayer">
+  <div class="a-bar"><span class="a-brand">관리자</span><button class="a-link" style="margin-left:auto" id="pinClose">닫기</button></div>
+  <div class="pin-box"><h2>비밀번호</h2><div class="pin-dots" id="pinDots"></div><div class="pin-pad" id="pinPad"></div><div class="pin-err" id="pinErr"></div></div>
+</div>
+
+<!-- 관리자 -->
+<div class="layer" id="adminLayer">
+  <div class="a-bar">
+    <span class="a-brand">관리자</span>
+    <div class="a-tabs" id="aTabs">
+      <button class="on" data-tab="live">주문 현황</button>
+      <button data-tab="pre">예약 주문</button>
+      <button data-tab="all">전체 내역</button>
+      <button data-tab="sales">매출</button>
+    </div>
+    <a class="a-link" href="../guide.html" target="_blank" style="margin-left:auto">운영 가이드</a>
+    <button class="a-link" id="adminClose">키오스크로 돌아가기</button>
+  </div>
+  <div class="a-body" id="aBody"></div>
+</div>
+
+<script src="../config.js"></script>
+<script src="../common.js"></script>
+<script>
+(function () {
+  const S = window.SHOP, U = window.ShopUtil;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // 초대장의 '앱 열기'로 들어온 손님 휴대폰: 주문을 저장하지 않고 주문코드를 발급
+  const GUEST = new URLSearchParams(location.search).has("guest");
+
+  /* ── 화면 크기: 세로형 키오스크 비율에 맞춤 ── */
+  const frame = $("frame");
+  function fit() {
+    const w = Math.min(innerWidth, innerHeight * 9 / 16);
+    frame.style.width = w + "px";
+    document.documentElement.style.fontSize = (w / 48) + "px";
+  }
+  addEventListener("resize", fit); fit();
+
+  /* ── 기본 설정 ── */
+  document.documentElement.style.setProperty("--accent", S.color || "#0B6E4F");
+  document.documentElement.style.setProperty("--accent-dark", S.colorDark || S.color || "#07543C");
+  document.title = S.name + (GUEST ? " 주문" : " 키오스크");
+  document.querySelectorAll("[data-name]").forEach((el) => (el.textContent = S.name));
+  $("tagline").textContent = S.tagline || "";
+  const img = (m) => (m.image ? '<img src="../' + esc(m.image) + '" alt="">' : "<span>" + esc(m.icon || "") + "</span>");
+  if (GUEST) {
+    $("readyBar").classList.add("hidden");
+    $("guestLink").classList.remove("hidden");
+    $("findEntry").classList.add("hidden");
+    $("hot").classList.add("hidden");
+  }
+
+  /* ── 저장 (이 기기의 브라우저) ── */
+  const KEY = "miniShop.v1";
+  const fresh = () => ({ orders: [], seqNow: 0, seqPre: 0 });
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { return fresh(); } }
+  let db = GUEST ? fresh() : load();
+  function save() { if (GUEST) return; try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { toast("저장에 실패했어요"); } }
+  addEventListener("storage", (e) => { if (!GUEST && e.key === KEY) { db = load(); renderReady(); if (adminOpen) renderAdmin(); } });
+
+  function addOrder(o) {
+    const pre = o.type === "pre";
+    const n = pre ? ++db.seqPre : ++db.seqNow;
+    const order = Object.assign({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      no: pre ? "P" + n : String(n), total: U.cartTotal(o.items), status: "접수", paid: false, createdAt: new Date().toISOString()
+    }, o);
+    db.orders.push(order); save();
+    return order;
+  }
+
+  /* ── 화면 이동 / 대기 시간 ── */
+  let current = "attract", idleT, idleTick, doneT;
+  function go(name) {
+    document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === name));
+    document.querySelectorAll("#frame .modal").forEach((m) => m.classList.remove("on"));
+    current = name;
+    clearInterval(doneT); clearInterval(idleTick);
+    if (name === "attract") { renderReady(); startShow(); } else stopShow();
+    if (name === "find") { digits = ""; $("codeIn").value = ""; $("codeErr").textContent = ""; renderFind(); }
+    bump();
+  }
+  const home = () => { cart = {}; go("attract"); };
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-home]")) return home();
+    const g = e.target.closest("[data-go]"); if (g) go(g.dataset.go);
+  });
+  // 손님 화면에서 60초 동안 조작이 없으면 '계속하시겠어요?' → 10초 뒤 처음으로
+  function bump() {
+    clearTimeout(idleT);
+    if (["type", "menu", "confirm", "pay", "find"].includes(current) && !$("idleModal").classList.contains("on"))
+      idleT = setTimeout(askIdle, 60000);
+  }
+  function askIdle() {
+    let left = 10;
+    $("idleCount").textContent = left;
+    $("idleModal").classList.add("on");
+    idleTick = setInterval(() => { left--; $("idleCount").textContent = left; if (left <= 0) home(); }, 1000);
+  }
+  $("idleKeep").onclick = () => { clearInterval(idleTick); $("idleModal").classList.remove("on"); bump(); };
+  ["pointerdown", "keydown"].forEach((ev) => document.addEventListener(ev, bump));
+
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 1800); }
+  function ask(title, text, yes) {
+    $("askTitle").textContent = title; $("askText").textContent = text;
+    $("askModal").classList.add("on");
+    $("askNo").onclick = () => $("askModal").classList.remove("on");
+    $("askYes").onclick = () => { $("askModal").classList.remove("on"); yes(); };
+  }
+
+  /* ── 0. 대기 화면: 상품 슬라이드 ── */
+  let showI = 0, showT;
+  const showList = S.menu.filter((m) => !m.soldOut);
+  function renderShow() {
+    const m = showList[showI % showList.length];
+    $("show").innerHTML = '<div class="swap" style="display:flex;flex-direction:column;align-items:center"><div class="disc">' + img(m) + '</div><div class="n">' + esc(m.name) + '</div><div class="p">' + U.won(m.price) + "</div></div>" +
+      '<div class="dots">' + showList.map((_, i) => '<i class="' + (i === showI % showList.length ? "on" : "") + '"></i>').join("") + "</div>";
+  }
+  function startShow() { renderShow(); clearInterval(showT); showT = setInterval(() => { showI++; renderShow(); }, 3500); }
+  function stopShow() { clearInterval(showT); }
+  function renderReady() {
+    const ready = db.orders.filter((o) => o.status === "준비완료");
+    $("readyNums").innerHTML = ready.length ? ready.map((o) => "<span>" + esc(o.no) + "</span>").join("") : '<span class="none">준비가 끝나면 번호가 표시됩니다</span>';
+  }
+  $("attract").addEventListener("click", (e) => { if (!e.target.closest("#hot") && !e.target.closest("a")) go("type"); });
+
+  // 숨은 관리자 입구: 대기 화면 오른쪽 위 모서리를 5번 연속 터치
+  let hotN = 0, hotT;
+  if (!GUEST) $("hot").addEventListener("click", (e) => {
+    e.stopPropagation();
+    hotN++; clearTimeout(hotT); hotT = setTimeout(() => (hotN = 0), 1500);
+    if (hotN >= 5) { hotN = 0; openPin(); }
+  });
+
+  /* ── 1. 주문 방법 ── */
+  let dine = "매장", cart = {}, cat = "전체";
+  $("type").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-type]"); if (!t) return;
+    dine = t.dataset.type; cart = {}; cat = "전체";
+    const label = dine === "예약" ? "예약 주문" : dine === "매장" ? "매장 식사" : "포장";
+    $("typePill").textContent = label; $("typePill2").textContent = label;
+    renderMenu(); renderCart(); go("menu");
+  });
+  if (GUEST) $("typeSub").textContent = "주문 후 받은 코드를 부스에서 보여 주세요";
+
+  /* ── 2. 메뉴 ── */
+  const cats = ["전체", ...new Set(S.menu.map((m) => m.category))];
+  const count = () => Object.values(cart).reduce((a, b) => a + b, 0);
+  function renderMenu() {
+    $("tabs").innerHTML = cats.map((c) => '<button class="' + (c === cat ? "on" : "") + '" data-cat="' + esc(c) + '">' + esc(c) + "</button>").join("");
+    $("grid").innerHTML = S.menu.filter((m) => cat === "전체" || m.category === cat).map((m) =>
+      '<button class="item press' + (m.soldOut ? " out" : "") + '" data-item="' + m.code + '"><div class="ph">' + img(m) + "</div>" +
+      (m.best ? '<span class="best">추천</span>' : "") + (cart[m.code] ? '<span class="cnt">' + cart[m.code] + "</span>" : "") +
+      '<div class="in"><div class="n">' + esc(m.name) + '</div><div class="p">' + U.won(m.price) + "</div></div></button>").join("");
+  }
+  $("tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-cat]"); if (b) { cat = b.dataset.cat; renderMenu(); } });
+  $("grid").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-item]"); if (!b) return;
+    const m = U.byCode(b.dataset.item);
+    if (m.soldOut) return toast("품절된 메뉴입니다");
+    openItem(m);
+  });
+
+  function openItem(m) {
+    let q = 1;
+    const draw = () => {
+      $("itemSheet").innerHTML = '<div class="ph">' + img(m) + "</div><h2>" + esc(m.name) + '</h2><div class="d">' + esc(m.desc || "") + "</div>" +
+        '<div class="row"><span class="price">' + U.won(m.price * q) + '</span><div class="stepper"><button data-q="-1">−</button><span>' + q + '</span><button data-q="1">+</button></div></div>' +
+        '<div class="acts"><button class="btn sec" data-x>취소</button><button class="btn pri" data-ok>' + q + "개 담기</button></div>";
+    };
+    draw();
+    $("itemSheet").onclick = (e) => {
+      const s = e.target.closest("[data-q]");
+      if (s) { q = Math.max(1, Math.min(20, q + Number(s.dataset.q))); draw(); }
+      if (e.target.closest("[data-x]")) $("itemModal").classList.remove("on");
+      if (e.target.closest("[data-ok]")) { setQty(m.code, (cart[m.code] || 0) + q); $("itemModal").classList.remove("on"); toast(m.name + " " + q + "개를 담았습니다"); }
+    };
+    $("itemModal").classList.add("on");
+  }
+  $("itemModal").addEventListener("click", (e) => { if (e.target.id === "itemModal") $("itemModal").classList.remove("on"); });
+
+  function setQty(code, q) { q = Math.max(0, Math.min(30, q)); if (q) cart[code] = q; else delete cart[code]; renderMenu(); renderCart(); }
+  function renderCart() {
+    const codes = Object.keys(cart);
+    $("cartList").innerHTML = codes.length ? codes.map((c) => {
+      const m = U.byCode(c);
+      return '<div class="crow"><span class="n">' + esc(m.name) + '</span><div class="stepper"><button data-c="' + c + '" data-d="-1">−</button><span>' + cart[c] + '</span><button data-c="' + c + '" data-d="1">+</button></div>' +
+        '<span class="p">' + U.won(m.price * cart[c]) + '</span><button class="x" data-c="' + c + '" data-d="x" aria-label="삭제">✕</button></div>';
+    }).join("") : '<div class="empty">메뉴를 선택해 주세요</div>';
+    $("cartHead").textContent = "주문 내역 " + count() + "개";
+    $("cartSum").textContent = U.won(U.cartTotal(cart));
+    $("toConfirm").disabled = !codes.length;
+  }
+  $("cartList").addEventListener("click", (e) => { const b = e.target.closest("[data-c]"); if (b) setQty(b.dataset.c, b.dataset.d === "x" ? 0 : (cart[b.dataset.c] || 0) + Number(b.dataset.d)); });
+  $("clearBtn").onclick = () => { if (count()) ask("주문 내역 삭제", "담은 메뉴를 모두 삭제할까요?", () => { cart = {}; renderMenu(); renderCart(); }); };
+
+  /* ── 3. 주문 확인 ── */
+  let selTime = "";
+  const needWho = () => dine === "예약" || GUEST;
+  $("toConfirm").onclick = () => {
+    $("summary").innerHTML = Object.keys(cart).map((c) => { const m = U.byCode(c); return '<div class="r"><span>' + esc(m.name) + " × " + cart[c] + "</span><b>" + U.won(m.price * cart[c]) + "</b></div>"; }).join("") +
+      '<div class="r tot"><span>총 주문 금액</span><b>' + U.won(U.cartTotal(cart)) + "</b></div>";
+    $("timeFld").classList.toggle("hidden", dine !== "예약");
+    $("whoFld").classList.toggle("hidden", !needWho());
+    if (selTime && dine !== "예약") selTime = "";
+    $("times").innerHTML = S.pickupTimes.map((t) => '<button class="opt' + (t === selTime ? " on" : "") + '" data-t="' + t + '">' + t + "</button>").join("");
+    $("err").textContent = "";
+    go("confirm");
+  };
+  $("times").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-t]"); if (!b) return;
+    selTime = b.dataset.t; $("err").textContent = "";
+    $("times").querySelectorAll(".opt").forEach((x) => x.classList.toggle("on", x === b));
+  });
+  ["fName", "fPhone"].forEach((id) => $(id).addEventListener("input", () => ($("err").textContent = "")));
+  $("toPay").onclick = () => {
+    const name = $("fName").value.trim(), phone = $("fPhone").value.trim();
+    const err = dine === "예약" && !selTime ? "픽업 시간을 선택해 주세요"
+      : needWho() && !name ? "이름을 입력해 주세요"
+      : needWho() && !/^\d{4}$/.test(phone) ? "휴대폰 번호 뒷자리 4자리를 입력해 주세요" : "";
+    $("err").textContent = err;
+    if (err) return;
+    $("payTotal").textContent = U.won(U.cartTotal(cart));
+    go("pay");
+  };
+
+  /* ── 4. 결제 수단 ── */
+  const PAY_ICON = {
+    "현금": '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v5M17.5 9.5v5"/>',
+    "계좌이체": '<path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
+    "쿠폰": '<path d="M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/>'
+  };
+  const PAY_DESC = { "현금": "카운터에서 현금으로 결제", "계좌이체": "계좌로 보내고 직원에게 확인", "쿠폰": "받은 쿠폰을 직원에게 제출" };
+  $("pays").innerHTML = S.payments.map((p) =>
+    '<button class="pay press" data-pay="' + esc(p) + '"><span class="icb"><svg class="ic" viewBox="0 0 24 24">' + (PAY_ICON[p] || PAY_ICON["쿠폰"]) + '</svg></span><span><div class="t">' + esc(p) + '</div><div class="d">' +
+    esc(p === "계좌이체" && S.account ? S.account : PAY_DESC[p] || "직원에게 결제") + '</div></span><span class="arr">›</span></button>').join("");
+  $("pays").addEventListener("click", (e) => { const b = e.target.closest("[data-pay]"); if (b) finish(b.dataset.pay); });
+
+  /* ── 5. 완료 ── */
+  function finish(payment) {
+    const pre = dine === "예약";
+    const name = needWho() ? $("fName").value.trim() : "", phone = needWho() ? $("fPhone").value.trim() : "";
+    const items = Object.assign({}, cart), total = U.cartTotal(items);
+    const lines = Object.keys(items).map((c) => '<div class="li"><span>' + esc(U.byCode(c).name) + " × " + items[c] + "</span><span>" + U.won(U.byCode(c).price * items[c]) + "</span></div>").join("") +
+      '<div class="li t"><span>합계</span><span>' + U.won(total) + "</span></div>";
+    const kind = (pre ? "예약 주문 · " + selTime + " 픽업" : dine === "매장" ? "매장 식사" : "포장") + " · " + payment;
+    const when = new Date().toLocaleString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+    let guide, acts;
+
+    if (GUEST) {
+      const code = U.encodePreorder({ cart: items, time: pre ? selTime : "", phone, name });
+      const text = "[" + S.name + " 주문]\n" + name + " · " + (pre ? selTime + " 픽업" : "현장 주문") + "\n" + U.cartText(items) + "\n합계 " + U.won(total) + "\n주문코드: " + code;
+      $("doneTitle").textContent = "주문코드가 발급되었습니다";
+      $("doneSub").textContent = "부스에서 이 코드를 보여 주세요";
+      $("paper").innerHTML = '<div class="shop">' + esc(S.name) + '</div><div class="kind">' + esc(kind) + '</div><hr><div class="lbl">주문코드</div><div class="code">' + esc(code) + "</div>" +
+        '<div class="lbl">' + esc(name) + " 님</div><hr>" + lines + '<div class="when">' + esc(when) + "</div>";
+      guide = pre ? selTime + "에 부스로 오셔서 이 화면을 보여 주세요.<br>캡처하거나 공유해 두면 편해요." : "부스 카운터에서 이 화면을 보여 주시면<br>바로 준비해 드려요.";
+      acts = '<button class="btn sec" id="copyBtn">코드 복사</button><button class="btn pri" id="shareBtn">공유하기</button>';
+      $("doneGuide").innerHTML = guide; $("doneActs").innerHTML = acts;
+      $("copyBtn").onclick = async () => { try { await navigator.clipboard.writeText(text); toast("복사되었습니다"); } catch (e) { toast("코드를 길게 눌러 복사해 주세요"); } };
+      $("shareBtn").onclick = async () => { if (navigator.share) { try { await navigator.share({ title: S.name, text }); } catch (e) {} } else $("copyBtn").onclick(); };
+      $("doneCount").innerHTML = '<a href="#" id="again" style="color:var(--sub)">처음으로</a>';
+      go("done");
+      $("again").onclick = (e) => { e.preventDefault(); home(); };
+      return;
+    }
+
+    const o = addOrder({ type: pre ? "pre" : "now", dine, items, name, phone, time: pre ? selTime : "", payment, source: "키오스크" });
+    $("doneTitle").textContent = pre ? "예약이 완료되었습니다" : "주문이 완료되었습니다";
+    $("doneSub").textContent = "번호표를 확인해 주세요";
+    $("paper").innerHTML = '<div class="shop">' + esc(S.name) + '</div><div class="kind">' + esc(kind) + '</div><hr><div class="lbl">' + (pre ? "예약 번호" : "주문 번호") + '</div><div class="no">' + esc(o.no) + "</div>" +
+      (name ? '<div class="lbl">' + esc(name) + " 님</div>" : "") + "<hr>" + lines + '<div class="when">' + esc(when) + "</div>";
+    $("doneGuide").innerHTML = pre ? selTime + "에 오셔서 예약 번호 <b>" + esc(o.no) + "</b> 또는<br>휴대폰 뒷자리를 말씀해 주세요." : "카운터에서 <b>" + esc(payment) + "</b> 결제를 도와드릴게요.<br>준비가 끝나면 번호를 불러 드립니다.";
+    $("doneActs").innerHTML = '<button class="btn pri" data-home>확인</button>';
+    go("done");
+    let left = 15;
+    const tick = () => ($("doneCount").textContent = left + "초 후 처음 화면으로 돌아갑니다");
+    tick(); doneT = setInterval(() => { left--; tick(); if (left <= 0) home(); }, 1000);
+  }
+
+  /* ── 예약 확인 ── */
+  let digits = "";
+  const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "전체삭제", "0", "지우기"];
+  const applyKey = (s, k) => (k === "전체삭제" ? "" : k === "지우기" ? s.slice(0, -1) : s.length < 4 ? s + k : s);
+  $("findPad").innerHTML = KEYS.map((k) => '<button class="press' + (k.length > 1 ? " fn" : "") + '" data-k="' + k + '">' + k + "</button>").join("");
+  $("findPad").addEventListener("click", (e) => { const b = e.target.closest("[data-k]"); if (b) { digits = applyKey(digits, b.dataset.k); renderFind(); } });
+  const resCard = (o) => '<div class="res"><div class="no">' + esc(o.no) + '</div><div><div class="t">' + esc(o.name) + " 님 · " + esc(o.time || "현장") + (o.time ? " 픽업" : "") + "</div>" +
+    '<div class="m">' + esc(U.cartText(o.items)) + " · " + U.won(o.total) + '</div><div class="m">' + (o.status === "준비완료" ? "준비 완료" : "접수됨") + " · " + (o.paid ? "결제 완료" : "결제 전") + "</div></div></div>";
+  function renderFind(list) {
+    $("findShow").innerHTML = [0, 1, 2, 3].map((i) => '<span class="' + (digits[i] ? "f" : "") + '">' + (digits[i] || "") + "</span>").join("");
+    if (!list && digits.length === 4) list = db.orders.filter((o) => o.phone === digits && !["완료", "취소"].includes(o.status));
+    $("findRes").innerHTML = !list ? "" : list.length
+      ? list.map(resCard).join("") + '<div class="msg">이 화면을 직원에게 보여 주세요</div>'
+      : '<div class="msg">해당 번호로 된 주문이 없어요.<br>주문코드가 있다면 아래에 입력해 주세요.</div>';
+  }
+  function importCode(text) {
+    const p = U.decodePreorder(text);
+    if (!p) return { error: "코드 형식이 맞지 않아요" };
+    const dup = db.orders.find((o) => o.code && o.code.toUpperCase() === p.code.toUpperCase());
+    if (dup) return { order: dup, dup: true };
+    const now = p.time === "00:00";
+    return { order: addOrder({ type: now ? "now" : "pre", dine: now ? "앱 주문" : "예약", items: p.cart, name: p.name, phone: p.phone, time: now ? "" : p.time, payment: "현장결제", source: "앱·초대장", code: p.code }) };
+  }
+  $("codeBtn").onclick = () => {
+    const r = importCode($("codeIn").value.trim());
+    $("codeErr").textContent = r.error || "";
+    if (r.error) return;
+    $("codeIn").value = "";
+    toast(r.dup ? "이미 등록된 주문입니다" : "주문이 등록되었습니다");
+    renderFind([r.order]);
+    $("findRes").scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  /* ───────── 관리자 ───────── */
+  let pin = "", adminOpen = false, atab = "live";
+  function openPin() { pin = ""; drawPin(); $("pinErr").textContent = ""; $("pinLayer").classList.add("on"); }
+  const drawPin = () => ($("pinDots").innerHTML = [0, 1, 2, 3].map((i) => '<i class="' + (pin[i] ? "f" : "") + '"></i>').join(""));
+  $("pinPad").innerHTML = KEYS.map((k) => '<button class="' + (k.length > 1 ? "fn" : "") + '" data-k="' + k + '">' + k + "</button>").join("");
+  $("pinPad").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-k]"); if (!b) return;
+    pin = applyKey(pin, b.dataset.k); drawPin();
+    if (pin.length === 4) {
+      if (pin === String(S.adminPin)) { $("pinLayer").classList.remove("on"); adminOpen = true; $("adminLayer").classList.add("on"); renderAdmin(); }
+      else { $("pinErr").textContent = "비밀번호가 맞지 않습니다"; pin = ""; setTimeout(drawPin, 250); }
+    }
+  });
+  $("pinClose").onclick = () => $("pinLayer").classList.remove("on");
+  $("adminClose").onclick = () => { adminOpen = false; $("adminLayer").classList.remove("on"); home(); };
+  $("aTabs").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tab]"); if (!b) return;
+    atab = b.dataset.tab; $("aTabs").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); renderAdmin();
+  });
+
+  const NEXT = { "접수": "준비완료", "준비완료": "완료" }, NEXT_LABEL = { "접수": "준비 완료", "준비완료": "전달 완료" };
+  const isOpen = (o) => !["완료", "취소"].includes(o.status);
+  const hm = (iso) => new Date(iso).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+  function card(o) {
+    const cls = o.status === "준비완료" ? " ready" : isOpen(o) ? "" : " closed";
+    const who = o.type === "pre" ? esc(o.time) + " 픽업 · " + esc(o.name) + " · " + esc(o.phone) : esc(o.dine || "지금 주문") + (o.name ? " · " + esc(o.name) : "") + (o.phone ? " · " + esc(o.phone) : "");
+    return '<div class="oc' + cls + '"><div class="top"><span class="no">' + esc(o.no) + '</span><span style="display:flex;gap:6px"><span class="tag">' + (o.status === "준비완료" ? "준비 완료" : esc(o.status)) +
+      '</span><span class="tag ' + (o.paid ? "paid" : "unpaid") + '">' + (o.paid ? "결제 완료" : "미결제") + '</span></span></div><div class="who">' + who + "</div>" +
+      "<ul>" + Object.entries(o.items).map(([c, q]) => "<li><span>" + esc(U.byCode(c) ? U.byCode(c).name : c) + "</span><span>" + q + "</span></li>").join("") + "</ul>" +
+      '<div class="meta"><span>' + U.won(o.total) + " · " + esc(o.payment) + "</span><span>" + esc(o.source || "") + " " + hm(o.createdAt) + "</span></div>" +
+      '<div class="acts"><button data-act="paid" data-id="' + o.id + '">' + (o.paid ? "결제 취소" : "결제 확인") + "</button>" +
+      (isOpen(o) ? '<button data-act="cancel" data-id="' + o.id + '">주문 취소</button>' : '<button data-act="reopen" data-id="' + o.id + '">되돌리기</button>') +
+      (NEXT[o.status] ? '<button class="main" data-act="next" data-id="' + o.id + '">' + NEXT_LABEL[o.status] + "</button>" : "") + "</div></div>";
+  }
+  const cards = (l, msg) => (l.length ? '<div class="a-cards">' + l.map(card).join("") + "</div>" : '<div class="a-empty">' + msg + "</div>");
+  const importBar = '<div class="a-tool"><input id="aCode" placeholder="주문코드 붙여넣기 — 카톡 내용을 통째로 붙여넣어도 됩니다"><button class="a-btn" id="aImport">등록</button></div>';
+
+  function renderAdmin() {
+    const body = $("aBody");
+    if (atab === "live") {
+      const wait = db.orders.filter((o) => o.status === "접수" && o.type === "now"), ready = db.orders.filter((o) => o.status === "준비완료");
+      body.innerHTML = importBar + '<div class="a-group">준비 중<small>' + wait.length + "건</small></div>" + cards(wait, "새 주문이 없습니다") +
+        '<div class="a-group">준비 완료 · 전달 대기<small>' + ready.length + "건</small></div>" + cards(ready, "전달 대기 중인 주문이 없습니다");
+    } else if (atab === "pre") {
+      const list = db.orders.filter((o) => o.type === "pre" && o.status === "접수").sort((a, b) => a.time.localeCompare(b.time));
+      const times = [...new Set(list.map((o) => o.time))];
+      body.innerHTML = importBar + (times.length ? times.map((t) => {
+        const g = list.filter((o) => o.time === t), need = {};
+        g.forEach((o) => Object.entries(o.items).forEach(([c, q]) => (need[c] = (need[c] || 0) + q)));
+        return '<div class="a-group">' + esc(t) + "<small>" + g.length + "건 · 준비할 것: " + esc(U.cartText(need)) + "</small></div>" + cards(g, "");
+      }).join("") : '<div class="a-empty">남은 예약 주문이 없습니다</div>');
+    } else if (atab === "all") {
+      body.innerHTML = cards(db.orders.slice().reverse(), "아직 주문이 없습니다");
+    } else {
+      const valid = db.orders.filter((o) => o.status !== "취소"), paid = valid.filter((o) => o.paid);
+      const sum = (l) => l.reduce((s, o) => s + o.total, 0), per = {}, byPay = {};
+      valid.forEach((o) => Object.entries(o.items).forEach(([c, q]) => (per[c] = (per[c] || 0) + q)));
+      paid.forEach((o) => (byPay[o.payment] = (byPay[o.payment] || 0) + o.total));
+      body.innerHTML = '<div class="stats"><div class="stat"><span>총 주문 금액</span><b>' + U.won(sum(valid)) + '</b></div><div class="stat"><span>결제 완료</span><b>' + U.won(sum(paid)) +
+        '</b></div><div class="stat"><span>미결제</span><b>' + U.won(sum(valid) - sum(paid)) + '</b></div><div class="stat"><span>주문 수 (현장 / 예약)</span><b>' +
+        valid.filter((o) => o.type === "now").length + " / " + valid.filter((o) => o.type === "pre").length + "</b></div></div>" +
+        '<table><tr><th>메뉴</th><th class="rt">판매 수량</th><th class="rt">금액</th></tr>' + S.menu.map((m) => "<tr><td>" + esc(m.name) + '</td><td class="rt">' + (per[m.code] || 0) + '</td><td class="rt">' + U.won((per[m.code] || 0) * m.price) + "</td></tr>").join("") + "</table>" +
+        '<table><tr><th>결제 방법</th><th class="rt">결제 완료 금액</th></tr>' + (Object.keys(byPay).length ? Object.entries(byPay).map(([p, v]) => "<tr><td>" + esc(p) + '</td><td class="rt">' + U.won(v) + "</td></tr>").join("") : '<tr><td colspan="2" style="color:var(--sub)">결제 확인된 주문이 없습니다</td></tr>') + "</table>" +
+        '<div class="a-tool"><button class="a-btn line" id="csv">CSV(엑셀) 내보내기</button><button class="a-btn line" id="reset" style="color:var(--danger)">모든 주문 삭제</button></div>';
+      $("csv").onclick = exportCsv;
+      $("reset").onclick = () => { if (confirm("모든 주문을 삭제할까요? 되돌릴 수 없습니다.\n삭제 전에 CSV로 내보내 두는 것을 권장합니다.")) { db = fresh(); save(); renderAdmin(); } };
+    }
+    const ib = $("aImport");
+    if (ib) ib.onclick = () => {
+      const parts = $("aCode").value.match(/(?:[A-Za-z]\d{1,2})+-\d{4}-\d{4}-[^\s-]+/g) || [];
+      if (!parts.length) return alert("주문코드를 찾지 못했어요");
+      let added = 0;
+      parts.forEach((p) => { const r = importCode(p); if (r.order && !r.dup) added++; });
+      alert(added + "건 등록" + (parts.length - added ? " · 중복 " + (parts.length - added) + "건 제외" : ""));
+      renderAdmin();
+    };
+  }
+  $("aBody").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const o = db.orders.find((x) => x.id === b.dataset.id); if (!o) return;
+    const a = b.dataset.act;
+    if (a === "next") o.status = NEXT[o.status];
+    if (a === "paid") o.paid = !o.paid;
+    if (a === "cancel") { if (!confirm(o.no + "번 주문을 취소할까요?")) return; o.status = "취소"; }
+    if (a === "reopen") o.status = "접수";
+    save(); renderAdmin();
+  });
+  function exportCsv() {
+    const rows = [["번호", "종류", "주문방법", "상태", "결제", "결제방법", "이름", "전화뒷자리", "픽업시간", "메뉴", "금액", "경로", "주문시각"]];
+    db.orders.forEach((o) => rows.push([o.no, o.type === "pre" ? "예약" : "현장", o.dine || "", o.status, o.paid ? "완료" : "미결제", o.payment, o.name, o.phone, o.time, U.cartText(o.items), o.total, o.source || "", new Date(o.createdAt).toLocaleString("ko-KR")]));
+    const csv = "﻿" + rows.map((r) => r.map((v) => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(",")).join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = S.name + "_주문내역.csv"; a.click();
+  }
+
+  go("attract");
+})();
+</script>
+</body>
+</html>
