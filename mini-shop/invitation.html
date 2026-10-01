@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>초대장</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fffaf0; --card: #ffffff; --ink: #3b3024; --muted: #8a7a66;
+    --accent: #f5b700; --accent-ink: #3b3024; --soft: #fff1c2; --line: #f0e3c8; --ok: #2f9e6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Gowun Dodum", system-ui, sans-serif; line-height: 1.6;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 16px 48px; }
+  h1, h2, .title { font-family: "Jua", sans-serif; font-weight: 400; }
+
+  .cover { text-align: center; padding: 56px 0 32px; }
+  .cover .big { font-size: 84px; line-height: 1; animation: bob 2.4s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-8px) rotate(-6deg); } }
+  .cover .eyebrow { letter-spacing: .3em; color: var(--muted); font-size: 13px; margin-top: 18px; }
+  .cover h1 { font-size: 44px; margin: 6px 0 4px; }
+  .cover .slogan { color: var(--muted); }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 22px 20px; margin: 16px 0; box-shadow: 0 6px 18px rgba(120,90,20,.06); }
+  .card h2 { font-size: 24px; margin: 0 0 12px; }
+  .message { white-space: pre-line; text-align: center; font-size: 17px; }
+  .host { text-align: center; color: var(--muted); margin-top: 14px; font-size: 14px; }
+
+  .info { display: grid; gap: 12px; }
+  .info div { display: flex; gap: 12px; align-items: baseline; }
+  .info b { min-width: 48px; color: var(--muted); font-weight: 400; font-size: 14px; }
+
+  .menu-item { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px dashed var(--line); }
+  .menu-item:first-of-type { border-top: 0; }
+  .menu-item .em { font-size: 34px; width: 44px; text-align: center; }
+  .menu-item .nm { flex: 1; }
+  .menu-item .nm small { display: block; color: var(--muted); font-size: 13px; line-height: 1.4; }
+  .price { font-family: "Jua", sans-serif; white-space: nowrap; }
+
+  .stepper { display: flex; align-items: center; gap: 6px; }
+  .stepper button { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--soft); font-size: 20px; color: var(--ink); cursor: pointer; }
+  .stepper span { min-width: 20px; text-align: center; font-family: "Jua", sans-serif; font-size: 18px; }
+
+  label { display: block; font-size: 14px; color: var(--muted); margin: 14px 0 6px; }
+  input, select {
+    width: 100%; font: inherit; font-size: 17px; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--line); background: #fffdf7; color: var(--ink);
+  }
+  .times { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .times button { padding: 10px 0; border-radius: 10px; border: 1px solid var(--line); background: #fffdf7; font: inherit; color: var(--ink); cursor: pointer; }
+  .times button.on { background: var(--accent); border-color: var(--accent); font-weight: bold; }
+
+  .total { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 2px solid var(--line); font-size: 18px; }
+  .total .price { font-size: 26px; }
+  .btn { display: block; width: 100%; margin-top: 16px; padding: 16px; border: 0; border-radius: 14px; background: var(--accent); color: var(--accent-ink); font-family: "Jua", sans-serif; font-size: 20px; cursor: pointer; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.ghost { background: var(--soft); }
+  .ticket .btn.ghost { background: #fff; border: 1px solid var(--line); }
+  .err { color: #c0392b; font-size: 14px; min-height: 20px; margin-top: 8px; }
+
+  .ticket { text-align: center; border: 2px dashed var(--accent); background: var(--soft); }
+  .ticket .code { font-family: "Jua", sans-serif; font-size: 26px; word-break: break-all; background: #fff; border-radius: 12px; padding: 12px; margin: 12px 0; letter-spacing: .04em; }
+  .ticket p { margin: 6px 0; }
+  .note { font-size: 13px; color: var(--muted); }
+  .hidden { display: none; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 28px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="cover">
+    <div class="big" id="coverEmoji"></div>
+    <div class="eyebrow">YOU ARE INVITED</div>
+    <h1 id="shopName"></h1>
+    <div class="slogan" id="slogan"></div>
+  </section>
+
+  <section class="card">
+    <p class="message" id="message"></p>
+    <p class="host" id="host"></p>
+  </section>
+
+  <section class="card">
+    <h2>📅 언제, 어디서</h2>
+    <div class="info">
+      <div><b>날짜</b><span id="date"></span></div>
+      <div><b>시간</b><span id="time"></span></div>
+      <div><b>장소</b><span id="place"></span></div>
+    </div>
+  </section>
+
+  <section class="card" id="preorder">
+    <h2>🛒 사전 주문하기</h2>
+    <p class="note">미리 주문하시면 원하는 시간에 줄 서지 않고 바로 받아 가실 수 있어요.</p>
+    <div id="menuList"></div>
+
+    <label>픽업 시간</label>
+    <div class="times" id="times"></div>
+
+    <label for="name">이름</label>
+    <input id="name" maxlength="10" placeholder="예) 김민수" autocomplete="name">
+
+    <label for="phone">전화번호 뒷자리 4자리</label>
+    <input id="phone" inputmode="numeric" maxlength="4" placeholder="예) 1234">
+
+    <div class="total"><span>합계</span><span class="price" id="total">0원</span></div>
+    <div class="err" id="err"></div>
+    <button class="btn" id="submit">사전 주문 코드 만들기</button>
+  </section>
+
+  <section class="card ticket hidden" id="ticket">
+    <h2>🎟️ 사전 주문 완료!</h2>
+    <p id="ticketSummary"></p>
+    <div class="code" id="code"></div>
+    <p class="note">이 코드를 <b>캡처</b>하거나 <b>공유</b>해 두었다가,<br>부스에서 보여 주시면 바로 준비해 드려요.</p>
+    <p class="note" id="account"></p>
+    <button class="btn" id="share">카톡 등으로 보내기</button>
+    <button class="btn ghost" id="copy">코드 복사</button>
+    <button class="btn ghost" id="again">다시 주문하기</button>
+  </section>
+
+  <footer id="contact"></footer>
+</div>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+(function () {
+  const S = window.SHOP, U = window.ShopUtil;
+  const $ = (id) => document.getElementById(id);
+  const cart = {};
+  let time = "";
+
+  document.title = S.name + " 초대장";
+  $("coverEmoji").textContent = S.emoji;
+  $("shopName").textContent = S.name;
+  $("slogan").textContent = S.slogan;
+  $("message").textContent = S.message;
+  $("host").textContent = "— " + S.host + " 드림";
+  $("date").textContent = S.date;
+  $("time").textContent = S.time;
+  $("place").textContent = S.place;
+  $("contact").textContent = S.contact;
+
+  // 메뉴 + 수량 버튼
+  S.menu.forEach((m) => {
+    const row = document.createElement("div");
+    row.className = "menu-item";
+    row.innerHTML =
+      '<div class="em"></div><div class="nm"><span class="n"></span> · <span class="price"></span><small></small></div>' +
+      '<div class="stepper"><button aria-label="빼기">−</button><span>0</span><button aria-label="더하기">+</button></div>';
+    row.querySelector(".em").textContent = m.emoji;
+    row.querySelector(".n").textContent = m.name;
+    row.querySelector(".price").textContent = U.won(m.price);
+    row.querySelector("small").textContent = m.desc;
+    const [minus, plus] = row.querySelectorAll("button");
+    const count = row.querySelector(".stepper span");
+    const set = (q) => { cart[m.code] = Math.max(0, Math.min(20, q)); count.textContent = cart[m.code]; refresh(); };
+    minus.onclick = () => set((cart[m.code] || 0) - 1);
+    plus.onclick = () => set((cart[m.code] || 0) + 1);
+    $("menuList").appendChild(row);
+  });
+
+  S.pickupTimes.forEach((t) => {
+    const b = document.createElement("button");
+    b.textContent = t;
+    b.onclick = () => {
+      time = t;
+      document.querySelectorAll(".times button").forEach((x) => x.classList.toggle("on", x === b));
+    };
+    $("times").appendChild(b);
+  });
+
+  function refresh() { $("total").textContent = U.won(U.cartTotal(cart)); }
+
+  let lastCode = "", lastText = "";
+
+  $("submit").onclick = () => {
+    const name = $("name").value.trim();
+    const phone = $("phone").value.trim();
+    const err = !U.cartTotal(cart) ? "메뉴를 하나 이상 골라 주세요."
+      : !time ? "픽업 시간을 골라 주세요."
+      : !name ? "이름을 적어 주세요."
+      : !/^\d{4}$/.test(phone) ? "전화번호 뒷자리 숫자 4자리를 적어 주세요." : "";
+    $("err").textContent = err;
+    if (err) return;
+
+    lastCode = U.encodePreorder({ cart, time, phone, name });
+    const total = U.won(U.cartTotal(cart));
+    $("ticketSummary").textContent = name + "님 · " + time + " 픽업 · " + U.cartText(cart) + " · " + total;
+    $("code").textContent = lastCode;
+    $("account").textContent = S.account ? "미리 입금하실 분: " + S.account : "";
+    lastText =
+      "[" + S.name + " 사전주문]\n" + name + " / " + time + " 픽업\n" + U.cartText(cart) + "\n합계 " + total +
+      "\n주문코드: " + lastCode;
+    $("preorder").classList.add("hidden");
+    $("ticket").classList.remove("hidden");
+    $("ticket").scrollIntoView({ behavior: "smooth" });
+  };
+
+  $("copy").onclick = async () => {
+    try { await navigator.clipboard.writeText(lastText); $("copy").textContent = "복사했어요 ✓"; }
+    catch (e) { $("copy").textContent = "길게 눌러 코드를 복사해 주세요"; }
+  };
+  $("share").onclick = async () => {
+    if (navigator.share) { try { await navigator.share({ title: S.name + " 사전주문", text: lastText }); } catch (e) {} }
+    else $("copy").onclick();
+  };
+  $("again").onclick = () => {
+    $("ticket").classList.add("hidden");
+    $("preorder").classList.remove("hidden");
+    $("copy").textContent = "코드 복사";
+  };
+})();
+</script>
+</body>
+</html>
