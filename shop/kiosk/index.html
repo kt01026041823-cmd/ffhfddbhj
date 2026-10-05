@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>키오스크</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap">
 <style>
   /* 화면은 세로형 키오스크(9:16) 비율. 1rem = 화면 너비의 1/48 (자동 조절) */
   :root {
@@ -15,7 +17,7 @@
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; margin: 0; }
-  body { background: #18181b; overflow: hidden; user-select: none; font-family: Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; color: var(--ink); letter-spacing: -0.02em; }
+  body { background: #18181b; overflow: hidden; user-select: none; font-family: Pretendard, "Noto Sans KR", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; color: var(--ink); letter-spacing: -0.02em; }
   button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
   input { font: inherit; color: inherit; user-select: text; }
   .hidden { display: none !important; }
@@ -262,6 +264,8 @@
   th { color: var(--sub); font-weight: 500; font-size: 13px; background: #fafafa; }
   .rt { text-align: right; }
   .a-empty { color: var(--sub); padding: 32px 0; text-align: center; }
+  .a-msg { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); background: rgba(18,18,18,.92); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 15px; z-index: 300; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .a-msg.on { opacity: 1; }
   .pin-box { margin: auto; width: min(380px, 92vw); text-align: center; }
   .pin-box h2 { font-size: 22px; margin: 0 0 20px; }
   .pin-dots { display: flex; justify-content: center; gap: 14px; margin-bottom: 24px; height: 20px; }
@@ -415,6 +419,15 @@
   <div class="a-body" id="aBody"></div>
 </div>
 
+<!-- 관리자 확인창 -->
+<div class="layer" id="aAsk" style="z-index:200;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:28px;width:min(400px,90vw);text-align:center">
+    <h3 id="aAskT" style="margin:0 0 8px;font-size:20px"></h3><p id="aAskP" style="color:var(--sub);margin:0 0 22px"></p>
+    <div style="display:flex;gap:8px"><button class="a-btn line" id="aAskNo" style="flex:1">아니요</button><button class="a-btn" id="aAskYes" style="flex:1">네</button></div>
+  </div>
+</div>
+<div id="aMsg" class="a-msg"></div>
+
 <script src="../config.js"></script>
 <script src="../common.js"></script>
 <script>
@@ -423,7 +436,7 @@
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   // 초대장의 '앱 열기'로 들어온 손님 휴대폰: 주문을 저장하지 않고 주문코드를 발급
-  const GUEST = new URLSearchParams(location.search).has("guest");
+  const GUEST = new URLSearchParams(location.search).has("guest") || location.hash === "#guest";
 
   /* ── 화면 크기: 세로형 키오스크 비율에 맞춤 ── */
   const frame = $("frame");
@@ -656,7 +669,7 @@
       acts = '<button class="btn sec" id="copyBtn">코드 복사</button><button class="btn pri" id="shareBtn">공유하기</button>';
       $("doneGuide").innerHTML = guide; $("doneActs").innerHTML = acts;
       $("copyBtn").onclick = async () => { try { await navigator.clipboard.writeText(text); toast("복사되었습니다"); } catch (e) { toast("코드를 길게 눌러 복사해 주세요"); } };
-      $("shareBtn").onclick = async () => { if (navigator.share) { try { await navigator.share({ title: S.name, text }); } catch (e) {} } else $("copyBtn").onclick(); };
+      $("shareBtn").onclick = async () => { try { await navigator.share({ title: S.name, text }); } catch (e) { if (!e || e.name !== "AbortError") $("copyBtn").onclick(); } };
       $("doneCount").innerHTML = '<a href="#" id="again" style="color:var(--sub)">처음으로</a>';
       go("done");
       $("again").onclick = (e) => { e.preventDefault(); home(); };
@@ -772,18 +785,19 @@
         valid.filter((o) => o.type === "now").length + " / " + valid.filter((o) => o.type === "pre").length + "</b></div></div>" +
         '<table><tr><th>메뉴</th><th class="rt">판매 수량</th><th class="rt">금액</th></tr>' + S.menu.map((m) => "<tr><td>" + esc(m.name) + '</td><td class="rt">' + (per[m.code] || 0) + '</td><td class="rt">' + U.won((per[m.code] || 0) * m.price) + "</td></tr>").join("") + "</table>" +
         '<table><tr><th>결제 방법</th><th class="rt">결제 완료 금액</th></tr>' + (Object.keys(byPay).length ? Object.entries(byPay).map(([p, v]) => "<tr><td>" + esc(p) + '</td><td class="rt">' + U.won(v) + "</td></tr>").join("") : '<tr><td colspan="2" style="color:var(--sub)">결제 확인된 주문이 없습니다</td></tr>') + "</table>" +
-        '<div class="a-tool"><button class="a-btn line" id="csv">CSV(엑셀) 내보내기</button><button class="a-btn line" id="reset" style="color:var(--danger)">모든 주문 삭제</button></div>';
+        '<div class="a-tool"><button class="a-btn line" id="csv">CSV(엑셀) 내보내기</button><button class="a-btn line" id="csvCopy">CSV 복사</button><button class="a-btn line" id="reset" style="color:var(--danger)">모든 주문 삭제</button></div>';
       $("csv").onclick = exportCsv;
-      $("reset").onclick = () => { if (confirm("모든 주문을 삭제할까요? 되돌릴 수 없습니다.\n삭제 전에 CSV로 내보내 두는 것을 권장합니다.")) { db = fresh(); save(); renderAdmin(); } };
+      $("csvCopy").onclick = async () => { try { await navigator.clipboard.writeText(csvText()); aMsg("CSV를 복사했습니다. 엑셀이나 구글 시트에 붙여넣으세요."); } catch (e) { aMsg("복사하지 못했습니다"); } };
+      $("reset").onclick = () => aAsk("모든 주문을 삭제할까요?", "되돌릴 수 없습니다. 삭제 전에 CSV로 내보내 두세요.", () => { db = fresh(); save(); renderAdmin(); });
     }
     const ib = $("aImport");
     if (ib) ib.onclick = () => {
       const parts = $("aCode").value.match(/(?:[A-Za-z]\d{1,2})+-\d{4}-\d{4}-[^\s-]+/g) || [];
-      if (!parts.length) return alert("주문코드를 찾지 못했어요");
+      if (!parts.length) return aMsg("주문코드를 찾지 못했어요");
       let added = 0;
       parts.forEach((p) => { const r = importCode(p); if (r.order && !r.dup) added++; });
-      alert(added + "건 등록" + (parts.length - added ? " · 중복 " + (parts.length - added) + "건 제외" : ""));
       renderAdmin();
+      aMsg(added + "건 등록" + (parts.length - added ? " · 중복 " + (parts.length - added) + "건 제외" : ""));
     };
   }
   $("aBody").addEventListener("click", (e) => {
@@ -792,14 +806,23 @@
     const a = b.dataset.act;
     if (a === "next") o.status = NEXT[o.status];
     if (a === "paid") o.paid = !o.paid;
-    if (a === "cancel") { if (!confirm(o.no + "번 주문을 취소할까요?")) return; o.status = "취소"; }
+    if (a === "cancel") return aAsk(o.no + "번 주문을 취소할까요?", U.cartText(o.items), () => { o.status = "취소"; save(); renderAdmin(); });
     if (a === "reopen") o.status = "접수";
     save(); renderAdmin();
   });
-  function exportCsv() {
+  function aAsk(title, text, yes) {
+    $("aAskT").textContent = title; $("aAskP").textContent = text; $("aAsk").classList.add("on");
+    $("aAskNo").onclick = () => $("aAsk").classList.remove("on");
+    $("aAskYes").onclick = () => { $("aAsk").classList.remove("on"); yes(); };
+  }
+  function aMsg(t) { const m = $("aMsg"); m.textContent = t; m.classList.add("on"); clearTimeout(aMsg.t); aMsg.t = setTimeout(() => m.classList.remove("on"), 2500); }
+  function csvText() {
     const rows = [["번호", "종류", "주문방법", "상태", "결제", "결제방법", "이름", "전화뒷자리", "픽업시간", "메뉴", "금액", "경로", "주문시각"]];
     db.orders.forEach((o) => rows.push([o.no, o.type === "pre" ? "예약" : "현장", o.dine || "", o.status, o.paid ? "완료" : "미결제", o.payment, o.name, o.phone, o.time, U.cartText(o.items), o.total, o.source || "", new Date(o.createdAt).toLocaleString("ko-KR")]));
-    const csv = "﻿" + rows.map((r) => r.map((v) => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(",")).join("\r\n");
+    return rows.map((r) => r.map((v) => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(",")).join("\r\n");
+  }
+  function exportCsv() {
+    const csv = "\uFEFF" + csvText();
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     a.download = S.name + "_주문내역.csv"; a.click();

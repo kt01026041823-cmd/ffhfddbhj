@@ -3,13 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>초대장</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css">
+<title>달콤상점</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap">
 <style>
   :root { --accent: #0B6E4F; --bg: #ffffff; --soft: #f5f6f7; --ink: #111214; --sub: #5f6368; --faint: #9aa0a6; --line: #e8eaed; }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Pretendard, -apple-system, "Apple SD Gothic Neo", sans-serif; letter-spacing: -0.02em; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: Pretendard, "Noto Sans KR", -apple-system, "Apple SD Gothic Neo", sans-serif; letter-spacing: -0.02em; line-height: 1.6; -webkit-font-smoothing: antialiased; }
   a { color: inherit; text-decoration: none; }
   .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 52px; padding: 0 24px; border-radius: 12px; font-weight: 700; font-size: 16px; white-space: nowrap; }
@@ -110,7 +112,7 @@
   <div class="wrap">
     <a href="#" class="logo"><i id="logoMark"></i><span data-name></span></a>
     <div class="links"><a href="#invite">소개</a><a href="#menu">메뉴</a><a href="#how">이용 방법</a><a href="#info">안내</a></div>
-    <a class="btn pri" data-app href="kiosk/?guest">앱 열기</a>
+    <a class="btn pri" data-app href="kiosk/index.html#guest">앱 열기</a>
   </div>
 </nav>
 
@@ -121,7 +123,7 @@
       <h1 id="heroTitle"></h1>
       <p class="lead" id="intro"></p>
       <div class="ctas">
-        <a class="btn pri" data-app href="kiosk/?guest">앱으로 미리 주문하기 →</a>
+        <a class="btn pri" data-app href="kiosk/index.html#guest">앱으로 미리 주문하기 →</a>
         <a class="btn ghost" href="#menu">메뉴 보기</a>
       </div>
       <div class="facts">
@@ -130,7 +132,7 @@
         <div><b id="fMenu"></b>메뉴</div>
       </div>
     </div>
-    <div class="phone"><iframe src="kiosk/?guest" title="주문 앱 미리보기" loading="lazy" tabindex="-1"></iframe><a data-app href="kiosk/?guest" aria-label="앱 열기"></a></div>
+    <div class="phone"><iframe src="kiosk/index.html#guest" title="주문 앱 미리보기" loading="lazy" tabindex="-1"></iframe><a data-app href="kiosk/index.html#guest" aria-label="앱 열기"></a></div>
   </div>
 </header>
 
@@ -183,7 +185,7 @@
   <div class="wrap">
     <div class="cta">
       <div><h2>기다리지 말고,<br>미리 주문해 두세요</h2><p>원하는 시간에 바로 받아 가실 수 있어요.</p></div>
-      <a class="btn" data-app href="kiosk/?guest">앱 열기 →</a>
+      <a class="btn" data-app href="kiosk/index.html#guest">앱 열기 →</a>
     </div>
   </div>
 </section>
@@ -199,7 +201,7 @@
   const won = (n) => n.toLocaleString("ko-KR") + "원";
 
   document.documentElement.style.setProperty("--accent", S.color || "#0B6E4F");
-  document.title = S.name + " — 초대장";
+  document.title = S.name;
   document.querySelectorAll("[data-name]").forEach((el) => (el.textContent = S.name));
   set("logoMark", S.name.charAt(0));
   set("shortDate", I.shortDate);
