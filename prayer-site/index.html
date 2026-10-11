@@ -1,0 +1,382 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>매일 1시간 기도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: one narrow column like the paper card — orange header band, heart calendar, then admin ledger */
+:root{
+  --bg:#f6f3ef; --paper:#ffffff; --ink:#3a2a1e; --muted:#8a7766; --line:#e6ddd3;
+  --harvest:#b8622a; --harvest-ink:#ffffff; --leaf:#7d9b2f; --leaf-soft:#e7efd3;
+  --sun:#d4679b; --sun-soft:#f8dfea; --gold:#d9a521; --danger:#c2412d;
+  --display:"Jua","Gowun Dodum",system-ui,sans-serif;
+  --body:"Gowun Dodum",system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1c1713; --paper:#2a221c; --ink:#f3e9df; --muted:#b4a291; --line:#43372d;
+  --harvest:#c9733a; --harvest-ink:#fffaf5; --leaf:#9cbb48; --leaf-soft:#33401b;
+  --sun:#e17fae; --sun-soft:#4a2638; --gold:#e5b740; --danger:#e3664f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1c1713; --paper:#2a221c; --ink:#f3e9df; --muted:#b4a291; --line:#43372d;
+  --harvest:#c9733a; --harvest-ink:#fffaf5; --leaf:#9cbb48; --leaf-soft:#33401b;
+  --sun:#e17fae; --sun-soft:#4a2638; --gold:#e5b740; --danger:#e3664f; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:520px;margin:0 auto;padding-inline:16px;padding-block:16px 40px;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--paper);border:1.5px solid var(--harvest);border-radius:18px;overflow:hidden}
+.band{background:var(--harvest);color:var(--harvest-ink);padding:14px 18px 16px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:6px 12px}
+.band small{display:block;font-size:14px;opacity:.9}
+.band h1{margin:0;font-family:var(--display);font-weight:400;font-size:28px;line-height:1.15;text-wrap:balance}
+.band .range{font-family:var(--display);font-size:15px;opacity:.95}
+.inner{padding:16px 14px 18px;display:flex;flex-direction:column;gap:14px}
+.me{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.me .name{font-family:var(--display);font-size:20px}
+.me .name span{color:var(--muted);font-family:var(--body);font-size:13px;margin-left:4px}
+.prog{display:flex;flex-direction:column;gap:6px}
+.prog .row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.prog .row b{color:var(--ink);font-family:var(--display);font-weight:400;font-size:18px}
+.bar{height:10px;border-radius:99px;background:var(--leaf-soft);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--leaf);border-radius:99px;transition:width .3s}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow div{text-align:center;font-size:12px;color:var(--muted)}
+.dow div:first-child{color:var(--sun)}
+.cell{aspect-ratio:1;max-width:100%;border:1px solid var(--line);border-radius:8px;background:none;padding:0;position:relative;display:grid;place-items:center;font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cell.empty{border-color:transparent;cursor:default}
+.cell svg{width:78%;height:78%;overflow:visible}
+.cell .heart{fill:none;stroke:var(--leaf);stroke-width:2.2;transition:fill .15s}
+.cell.sun .heart{stroke:var(--sun)}
+.cell .num{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:clamp(13px,4vw,17px);color:var(--leaf);padding-top:2px}
+.cell.sun .num{color:var(--sun)}
+.cell.on .heart{fill:var(--leaf)}
+.cell.on.sun .heart{fill:var(--sun)}
+.cell.on .num{color:#fff}
+.cell.on::after{content:"✓";position:absolute;right:2px;bottom:0;font-size:13px;font-weight:700;color:var(--harvest)}
+.cell.today{border:2px solid var(--harvest)}
+.cell.future{cursor:not-allowed;opacity:.38}
+.cell.last .crown{position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--gold)}
+.cell:focus-visible,.btn:focus-visible,.tab:focus-visible,input:focus-visible{outline:2px solid var(--harvest);outline-offset:2px}
+.month-tag{font-size:12px;color:var(--muted);margin:-6px 0 0}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.btn{font:inherit;font-family:var(--display);font-size:16px;border:0;border-radius:12px;padding:10px 16px;background:var(--harvest);color:var(--harvest-ink);cursor:pointer}
+.btn.ghost{background:none;color:var(--harvest);border:1.5px solid var(--harvest);font-size:14px;padding:6px 12px}
+.btn.danger{background:var(--danger);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+input[type=text]{font:inherit;font-size:17px;width:100%;box-sizing:border-box;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink)}
+.tabs{display:flex;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:4px}
+.tab{flex:1;font:inherit;font-family:var(--display);font-size:16px;border:0;background:none;color:var(--muted);padding:8px;border-radius:10px;cursor:pointer}
+.tab[aria-selected=true]{background:var(--harvest);color:var(--harvest-ink)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-family:var(--display);font-weight:400;font-size:24px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.ledger{display:flex;flex-direction:column}
+.person{border-top:1px solid var(--line)}
+.person:first-child{border-top:0}
+.prow{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 2px;width:100%;background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.rank{font-family:var(--display);color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.rank.top{color:var(--gold)}
+.pname{font-family:var(--display);font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbar{height:6px;border-radius:99px;background:var(--leaf-soft);margin-top:4px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--leaf)}
+.pcount{text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);line-height:1.3}
+.pcount b{display:block;font-family:var(--display);font-weight:400;font-size:18px;color:var(--ink)}
+.pdetail{padding:4px 0 14px;display:flex;flex-direction:column;gap:10px}
+.mini .grid{gap:3px}
+.mini .cell{cursor:default;border-radius:5px}
+.mini .cell .num{font-size:11px}
+.mini .cell.on::after{display:none}
+.daily{display:flex;gap:2px;align-items:flex-end;height:64px;overflow-x:auto}
+.daily div{flex:1 0 7px;background:var(--leaf);border-radius:3px 3px 0 0;min-height:2px}
+.daily div.sun{background:var(--sun)}
+.daily div.fut{background:var(--line)}
+.sec-title{font-family:var(--display);font-size:18px;margin:0}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--sun-soft);padding:10px;border-radius:10px;font-size:14px}
+.notice{background:var(--sun-soft);border-radius:12px;padding:12px 14px;font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:14px;z-index:9}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.adminbtn{font:inherit;font-family:var(--display);font-size:13px;background:rgba(255,255,255,.18);color:var(--harvest-ink);border:1px solid rgba(255,255,255,.45);border-radius:99px;padding:4px 12px;cursor:pointer;align-self:flex-start}
+.band .top{display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px}
+.seg{display:flex;gap:4px;background:var(--bg);border-radius:12px;padding:4px}
+.seg button{flex:1;font:inherit;font-family:var(--display);font-size:15px;border:0;background:none;color:var(--muted);padding:8px;border-radius:9px;cursor:pointer}
+.seg button[aria-selected=true]{background:var(--paper);color:var(--harvest);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+form.stack{display:flex;flex-direction:column;gap:10px}
+form.big input{font-size:20px!important;padding:14px 16px!important}
+form.big .btn{font-size:20px;padding:14px}
+form.big label{font-size:16px!important}
+form.stack label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input[type=password]{font:inherit;font-size:17px;width:100%;box-sizing:border-box;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);letter-spacing:.1em}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.idchip{font-size:12px;color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <div class="card">
+    <div class="band">
+      <div class="top"><small>추수감사절</small><button class="adminbtn" id="adminBtn" type="button">🔒 관리자</button></div>
+      <h1>매일 1시간 기도</h1>
+      <div class="range">10월 12일 ~ 11월 15일</div>
+    </div>
+    <div class="inner" id="main"><p class="hint">기도표를 불러오는 중이에요…</p></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ===== Firebase 설정: Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹)에서 복사한 값으로 바꿔 주세요 =====
+const FIREBASE_CONFIG = {
+  apiKey: "여기에_apiKey",
+  authDomain: "여기에_authDomain",
+  projectId: "여기에_projectId",
+  storageBucket: "여기에_storageBucket",
+  messagingSenderId: "여기에_messagingSenderId",
+  appId: "여기에_appId"
+};
+</script>
+<script>
+(function(){
+  const START = new Date(2026,9,12), END = new Date(2026,10,15);
+  const pad = n => String(n).padStart(2,'0');
+  const key = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const DAYS = [];
+  for(let d=new Date(START); d<=END; d.setDate(d.getDate()+1)) DAYS.push(new Date(d));
+  const TOTAL = DAYS.length;
+  const todayKey = () => key(new Date());
+  const isFuture = k => k > todayKey();
+  const elapsed = () => DAYS.filter(d => key(d) <= todayKey()).length;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtDate = ms => { if(!ms) return '-'; const d=new Date(ms); return (d.getMonth()+1)+'/'+d.getDate(); };
+  const HEART = '<svg viewBox="0 0 32 30" aria-hidden="true"><path class="heart" d="M16 28C6 20 2 15 2 9.5 2 5.4 5.2 2.5 9 2.5c2.8 0 5 1.6 7 4.2 2-2.6 4.2-4.2 7-4.2 3.8 0 7 2.9 7 7 0 5.5-4 10.5-14 18.5z"/></svg>';
+  const store = { get(k){try{return localStorage.getItem(k);}catch(e){return null;}}, set(k,v){try{localStorage.setItem(k,v);}catch(e){}}, del(k){try{localStorage.removeItem(k);}catch(e){}} };
+
+  function toast(msg){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,2200); }
+
+  async function sha(txt){
+    try{ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(txt)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+    catch(e){ let h1=0x811c9dc5,h2=0x1234567; for(const c of txt){h1=Math.imul(h1^c.charCodeAt(0),16777619);h2=Math.imul(h2+c.charCodeAt(0),2654435761);} return 'f'+(h1>>>0).toString(16)+(h2>>>0).toString(16); }
+  }
+  const normName = n => n.trim().replace(/\s+/g,' ');
+  const memberId = async name => 'm' + (await sha('member::'+normName(name))).slice(0,20);
+  const pinHash = (id,pw) => sha('pin::'+id+'::'+pw);
+  const adminPwHash = pw => sha('harvest-prayer-2026::'+pw);
+
+  function gridHTML(set, interactive){
+    let h = '<div class="dow"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div><div class="grid">';
+    for(let i=0;i<DAYS[0].getDay();i++) h += '<div class="cell empty"></div>';
+    DAYS.forEach((d,i)=>{
+      const k=key(d), on=set.has(k), sun=d.getDay()===0, fut=isFuture(k), today=k===todayKey(), last=i===TOTAL-1;
+      const cls=['cell',on&&'on',sun&&'sun',fut&&'future',today&&'today',last&&'last'].filter(Boolean).join(' ');
+      const label=(d.getMonth()+1)+'월 '+d.getDate()+'일'+(on?' 기도 완료':'');
+      const inner=HEART+'<span class="num">'+d.getDate()+'</span>'+(last?'<span class="crown">♛</span>':'');
+      h += interactive
+        ? '<button class="'+cls+'" data-k="'+k+'" aria-pressed="'+on+'" aria-label="'+label+'"'+(fut?' aria-disabled="true"':'')+'>'+inner+'</button>'
+        : '<div class="'+cls+'" title="'+label+'">'+inner+'</div>';
+    });
+    return h+'</div>';
+  }
+  function streak(set){
+    let s=0; const t=todayKey();
+    for(let i=DAYS.length-1;i>=0;i--){ const k=key(DAYS[i]); if(k>t) continue; if(set.has(k)) s++; else if(k===t) continue; else break; }
+    return s;
+  }
+
+  // ---- 상태 ----
+  let started=false, db=null, user=null, isOwner=false, loaded=false, readOnly=false;
+  let members={};            // id -> {name, pin, days, createdAt, updatedAt}
+  let meId=null, myDays=new Set(), inflight=0;
+  let view='login', loginMode='login';
+  let adminHash=null, adminLoaded=false, unlocked=false, changingPw=false;
+  let openPerson=null, confirmDel=null, resetFor=null;
+
+  function setView(v){ view=v; render(); }
+  function render(){
+    $('adminBtn').textContent = view==='admin' ? '← 기도표로' : '🔒 관리자';
+    if(view==='admin') return renderAdmin();
+    if(meId && members[meId]) return renderMe();
+    return renderLogin();
+  }
+  $('adminBtn').onclick=()=>{ if(view==='admin'){ view = meId?'me':'login'; } else { view='admin'; } openPerson=null; confirmDel=null; resetFor=null; render(); };
+
+  function notReady(m){
+    if(!started || (db && !loaded)){ m.innerHTML='<p class="hint">기도표를 불러오는 중이에요…</p>'; return true; }
+    if(!db){ m.innerHTML='<div class="notice" style="display:flex;flex-direction:column;gap:8px"><b>기도표를 불러오지 못했어요</b>'+
+      '<span>인터넷 연결을 확인하고 다시 불러와 주세요. 계속 안 되면 관리자에게 알려 주세요.</span></div>'+
+      '<button class="btn" id="retryBtn">다시 불러오기</button>'; $('retryBtn').onclick=()=>{ started=false; render(); start(); }; return true; }
+    return false;
+  }
+
+  // ---- 로그인 / 처음 등록 ----
+  function renderLogin(){
+    const m=$('main'); if(notReady(m)) return;
+    m.innerHTML =
+      '<div class="sec-title" style="font-size:22px">이름과 비밀번호를 적어 주세요</div>'+
+      '<form class="stack big" id="loginForm">'+
+      '<label>이름<input type="text" id="lgName" maxlength="20" placeholder="예: 김초코" autocomplete="off"></label>'+
+      '<label>비밀번호 (숫자 4자리)<input type="password" id="lgPw" maxlength="20" inputmode="numeric" placeholder="예: 1234" autocomplete="off"></label>'+
+      '<button class="btn" type="submit">들어가기</button></form>'+
+      '<p class="hint" style="font-size:15px">처음이시면 적으신 이름과 비밀번호로 바로 만들어져요. 다음부터 똑같이 적으시면 돼요. 은행 비밀번호 말고 새 번호를 써 주세요.</p>'+
+      (readOnly?'<div class="notice">지금은 저장 권한이 없어요. 관리자에게 Firebase 저장 규칙을 확인해 달라고 하세요.</div>':'');
+    $('loginForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const name=normName($('lgName').value), pw=$('lgPw').value.trim();
+      if(!name){toast('이름을 적어 주세요');return;}
+      if(pw.length<4){toast('비밀번호를 4자리 적어 주세요');return;}
+      const id=await memberId(name), h=await pinHash(id,pw), ex=members[id];
+      if(ex){
+        if(ex.pin!==h){toast('비밀번호가 달라요. 다시 적어 주세요');$('lgPw').value='';return;}
+        if(ex.pw!==pw) db.doc('members/'+id).update({pw}).catch(()=>{});
+        login(id); return;
+      }
+      try{
+        await db.doc('members/'+id).set({name,pin:h,pw,days:[],createdAt:Date.now(),updatedAt:Date.now()});
+        login(id); toast(name+'님, 환영해요!');
+      }catch(err){ if(err&&err.code==='permission-denied'){readOnly=true;render();} toast('들어가지 못했어요. 잠시 후 다시 해 주세요'); }
+    });
+  }
+  function login(id){ meId=id; myDays=new Set((members[id]&&members[id].days)||[]); store.set('prayer-me',id); view='me'; render(); }
+  function logout(){ meId=null; myDays=new Set(); store.del('prayer-me'); view='login'; loginMode='login'; render(); }
+
+  // ---- 내 기도표 ----
+  function saveDays(){
+    inflight++;
+    db.doc('members/'+meId).update({days:[...myDays].sort(),updatedAt:Date.now()})
+      .catch(e=>{ if(e&&e.code==='permission-denied'){readOnly=true;} toast('저장하지 못했어요. 다시 눌러 주세요'); })
+      .finally(()=>{ inflight--; });
+  }
+  function renderMe(){
+    const m=$('main'); if(notReady(m)) return;
+    const me=members[meId], n=myDays.size, el=elapsed();
+    m.innerHTML =
+      '<div class="me"><div class="name">'+esc(me.name)+'<span>님의 기도표</span></div><button class="btn ghost" id="logoutBtn">로그아웃</button></div>'+
+      '<div class="prog"><div class="row"><span><b>'+n+'</b> / '+TOTAL+'일 기도</span><span>연속 '+streak(myDays)+'일 · 지난 날 중 '+(el?Math.round(n/el*100):0)+'%</span></div>'+
+      '<div class="bar"><i style="width:'+(n/TOTAL*100)+'%"></i></div></div>'+
+      gridHTML(myDays,true)+
+      '<p class="hint">하트를 눌러 기도한 날을 체크해요. 다시 누르면 취소돼요. 앞으로 올 날은 그날이 되면 체크할 수 있어요.</p>'+
+      (readOnly?'<div class="notice">지금은 저장 권한이 없어요. 관리자에게 Firebase 저장 규칙을 확인해 달라고 하세요.</div>':'');
+    $('logoutBtn').onclick=logout;
+    m.querySelectorAll('button.cell').forEach(b=>b.addEventListener('click',()=>{
+      const k=b.dataset.k;
+      if(isFuture(k)){toast('아직 오지 않은 날이에요');return;}
+      if(readOnly){toast('저장 권한이 없어요');return;}
+      if(myDays.has(k)) myDays.delete(k); else myDays.add(k);
+      saveDays(); renderMe();
+      if(myDays.has(k)&&k===todayKey()) toast('오늘도 기도 완료! 🙏');
+    }));
+  }
+
+  // ---- 관리자 ----
+  function renderAdmin(){
+    const a=$('main'); if(notReady(a)) return;
+    if(!unlocked || changingPw) return renderLock(a);
+    const list=Object.entries(members).map(([id,m])=>({id,name:m.name||'이름 없음',pw:m.pw||'',created:m.createdAt,updated:m.updatedAt,days:new Set(Array.isArray(m.days)?m.days:[])}))
+      .sort((x,y)=>y.days.size-x.days.size||x.name.localeCompare(y.name,'ko'));
+    const el=elapsed(), t=todayKey();
+    const todayCount=list.filter(p=>p.days.has(t)).length;
+    const avg=list.length&&el?Math.round(list.reduce((s,p)=>s+p.days.size,0)/(list.length*el)*100):0;
+    const perDay=DAYS.map(d=>{const k=key(d);return{k,sun:d.getDay()===0,fut:k>t,c:list.filter(p=>p.days.has(k)).length};});
+    const max=Math.max(1,list.length);
+    let h='<div class="me"><div class="sec-title">관리자 · 전체 현황</div><div class="row-btns">'+
+      (isOwner?'<button class="btn ghost" id="pwChange">비밀번호 바꾸기</button>':'')+
+      '<button class="btn ghost" id="lockBtn">잠그기</button></div></div>'+
+      '<div class="stats"><div class="stat"><b>'+list.length+'</b><span>들어온 사람</span></div>'+
+      '<div class="stat"><b>'+todayCount+'</b><span>오늘 기도</span></div>'+
+      '<div class="stat"><b>'+avg+'%</b><span>평균 참여율</span></div></div>'+
+      '<div><p class="hint" style="margin-bottom:6px">날짜별 기도한 사람 수 (10/12 → 11/15)</p><div class="daily">'+
+      perDay.map(p=>'<div class="'+(p.fut?'fut':p.sun?'sun':'')+'" style="height:'+(p.fut?4:Math.max(3,p.c/max*100))+'%" title="'+p.k.slice(5).replace('-','/')+' · '+p.c+'명"></div>').join('')+
+      '</div></div>';
+    if(!list.length) h+='<p class="hint">아직 등록한 사람이 없어요. 기도표 링크를 나누면 등록한 사람부터 여기에 나타나요.</p>';
+    else h+='<div class="ledger">'+list.map((p,i)=>{
+      const open=openPerson===p.id;
+      let tools='';
+      if(open){
+        if(confirmDel===p.id) tools='<div class="confirm"><span>'+esc(p.name)+'님의 기록을 모두 지울까요?</span><button class="btn danger" data-del="'+p.id+'">지우기</button><button class="btn ghost" data-cancel="1">취소</button></div>';
+        else if(resetFor===p.id) tools='<form class="confirm" data-reset="'+p.id+'"><span>새 비밀번호</span><input type="password" id="rs-'+p.id+'" maxlength="20" inputmode="numeric" style="flex:1;min-width:100px;padding:8px 10px;font-size:15px"><button class="btn" type="submit">바꾸기</button><button class="btn ghost" type="button" data-cancel="1">취소</button></form>';
+        else tools='<div class="row-btns"><button class="btn ghost" data-resetask="'+p.id+'">비밀번호 다시 정하기</button><button class="btn ghost" data-ask="'+p.id+'">기록 삭제</button></div>';
+      }
+      return '<div class="person"><button class="prow" data-id="'+p.id+'" aria-expanded="'+open+'">'+
+        '<span class="rank'+(i<3&&p.days.size?' top':'')+'">'+(i+1)+'</span>'+
+        '<span style="min-width:0"><div class="pname">'+esc(p.name)+' <span style="font-family:var(--body);font-size:14px;color:var(--harvest);background:var(--leaf-soft);border-radius:6px;padding:1px 7px;margin-left:4px">비번 '+(p.pw?esc(p.pw):'-')+'</span></div><div class="pbar"><i style="width:'+(p.days.size/TOTAL*100)+'%"></i></div></span>'+
+        '<span class="pcount"><b>'+p.days.size+'일</b>'+(p.days.has(t)?'오늘 ✓':'연속 '+streak(p.days)+'일')+'</span></button>'+
+        (open?'<div class="pdetail"><div class="confirm" style="background:var(--leaf-soft)"><span>비밀번호</span><b style="font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:.15em">'+(p.pw?esc(p.pw):'-')+'</b>'+(p.pw?'':'<span class="hint">다음에 로그인하면 보여요</span>')+'</div><p class="hint">처음 들어온 날 '+fmtDate(p.created)+' · 마지막 기록 '+fmtDate(p.updated)+' · 체크 '+p.days.size+' / '+TOTAL+'일</p><div class="mini">'+gridHTML(p.days,false)+'</div>'+tools+'</div>':'')+
+        '</div>';
+    }).join('')+'</div>';
+    a.innerHTML=h;
+    $('lockBtn').onclick=()=>{unlocked=false;isOwner=!adminHash;openPerson=null;view=meId?'me':'login';render();};
+    if($('pwChange')) $('pwChange').onclick=()=>{changingPw=true;render();};
+    a.querySelectorAll('.prow').forEach(b=>b.onclick=()=>{openPerson=openPerson===b.dataset.id?null:b.dataset.id;confirmDel=null;resetFor=null;render();});
+    a.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>{confirmDel=b.dataset.ask;render();});
+    a.querySelectorAll('[data-resetask]').forEach(b=>b.onclick=()=>{resetFor=b.dataset.resetask;render();});
+    a.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>{confirmDel=null;resetFor=null;render();});
+    a.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+      b.disabled=true;
+      try{ await db.doc('members/'+b.dataset.del).delete(); confirmDel=null; openPerson=null; toast('삭제했어요'); render(); }
+      catch(e){ toast('삭제하지 못했어요'); b.disabled=false; }
+    });
+    a.querySelectorAll('form[data-reset]').forEach(f=>f.addEventListener('submit',async e=>{
+      e.preventDefault(); const id=f.dataset.reset, pw=$('rs-'+id).value;
+      if(pw.length<4){toast('4자리 이상 적어 주세요');return;}
+      try{ await db.doc('members/'+id).update({pin:await pinHash(id,pw),pw}); resetFor=null; toast('비밀번호를 바꿨어요'); render(); }
+      catch(err){ toast('바꾸지 못했어요'); }
+    }));
+  }
+  function renderLock(a){
+    if(!adminLoaded){ a.innerHTML='<p class="hint">불러오는 중이에요…</p>'; return; }
+    const pwField=(id,ph)=>'<input type="password" id="'+id+'" maxlength="40" placeholder="'+ph+'" autocomplete="off">';
+    if(!adminHash || changingPw){
+      if(!isOwner){ a.innerHTML='<div class="sec-title">관리자 모드</div><p class="hint">관리자 비밀번호가 아직 정해지지 않았어요.</p>'; return; }
+      a.innerHTML='<div class="sec-title">'+(changingPw?'관리자 비밀번호 바꾸기':'관리자 비밀번호 만들기')+'</div>'+
+        '<p class="hint">이 비밀번호를 아는 사람만 관리자 모드에 들어올 수 있어요. 4자 이상으로 정해 주세요.</p>'+
+        '<form class="stack" id="pwSet">'+pwField('pwSetIn','새 관리자 비밀번호')+'<div class="row-btns"><button class="btn" type="submit">저장</button>'+(changingPw?'<button class="btn ghost" type="button" id="pwCancel">취소</button>':'')+'</div></form>';
+      $('pwSet').addEventListener('submit',async e=>{
+        e.preventDefault(); const v=$('pwSetIn').value; if(v.length<4){toast('4자 이상 적어 주세요');return;}
+        try{ await db.doc('settings/admin').set({hash:await adminPwHash(v),updatedAt:Date.now()}); unlocked=true; changingPw=false; toast('관리자 비밀번호를 저장했어요'); render(); }
+        catch(err){ toast('저장하지 못했어요'); }
+      });
+      if($('pwCancel')) $('pwCancel').onclick=()=>{changingPw=false;render();};
+      return;
+    }
+    a.innerHTML='<div class="sec-title">관리자 모드</div><p class="hint">관리자 비밀번호를 입력해 주세요.</p>'+
+      '<form class="stack" id="pwIn">'+pwField('pwInIn','관리자 비밀번호')+'<button class="btn" type="submit">들어가기</button></form>';
+    $('pwIn').addEventListener('submit',async e=>{
+      e.preventDefault(); const v=$('pwInIn').value;
+      if(await adminPwHash(v)===adminHash){unlocked=true;isOwner=true;render();}
+      else{toast('비밀번호가 맞지 않아요');$('pwInIn').value='';}
+    });
+  }
+
+  let lastDay=todayKey();
+  setInterval(()=>{ if(todayKey()!==lastDay){ lastDay=todayKey(); render(); } },60000);
+
+  async function start(){
+    try{
+      if(!window.firebase) throw new Error('no firebase');
+      const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+      db = app.firestore();
+    }catch(e){ db=null; }
+    started=true;
+    if(!db){ render(); return; }
+    db.collection('members').onSnapshot(snap=>{
+      const next={}; snap.docs.forEach(d=>{ next[d.id]=d.data()||{}; });
+      members=next;
+      if(!loaded){ const saved=store.get('prayer-me'); if(saved&&members[saved]){ meId=saved; view='me'; } }
+      if(meId && !members[meId]){ meId=null; myDays=new Set(); store.del('prayer-me'); if(view==='me') view='login'; }
+      else if(meId && inflight===0 && !snap.metadata.hasPendingWrites){ myDays=new Set(members[meId].days||[]); }
+      loaded=true;
+      const typing=document.activeElement&&/INPUT/.test(document.activeElement.tagName);
+      if(!typing) render();
+    },()=>{ toast('기도표를 불러오지 못했어요'); });
+    db.doc('settings/admin').onSnapshot(d=>{
+      const nh=d.exists?(d.data()||{}).hash||null:null;
+      if(adminLoaded&&nh!==adminHash&&!isOwner) unlocked=false;
+      adminHash=nh; adminLoaded=true;
+      // 관리자 비밀번호가 아직 없으면 처음 연 사람이 정하고, 그다음부터는 잠금을 푼 사람만 바꿀 수 있어요
+      isOwner = !nh || unlocked;
+      if(view==='admin'&&!changingPw) render();
+    },()=>{ adminLoaded=true; });
+  }
+  render();
+  start();
+})();
+</script>
+
+</body></html>
