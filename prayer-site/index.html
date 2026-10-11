@@ -119,18 +119,42 @@ input[type=password]{font:inherit;font-size:17px;width:100%;box-sizing:border-bo
 </div>
 <div class="toast" id="toast" hidden></div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-// ===== Firebase 설정: Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹)에서 복사한 값으로 바꿔 주세요 =====
-const FIREBASE_CONFIG = {
-  apiKey: "여기에_apiKey",
-  authDomain: "여기에_authDomain",
-  projectId: "여기에_projectId",
-  storageBucket: "여기에_storageBucket",
-  messagingSenderId: "여기에_messagingSenderId",
-  appId: "여기에_appId"
-};
+// WordGrace와 같은 Firebase 실시간 데이터베이스를 쓰고, 기도표 기록은 prayer2026 아래에 따로 저장해요
+const FB = 'https://symphonious-profiterole-3ca963-default-rtdb.firebaseio.com';
+const FB_ROOT = 'prayer2026';
+const POLL_MS = 5000;
+
+// 기도표 코드가 쓰던 db.collection / db.doc 모양 그대로 Firebase REST로 연결해 주는 작은 도우미
+function makeDb(){
+  const url = p => FB + '/' + FB_ROOT + '/' + p + '.json';
+  async function req(p, method, body){
+    const r = await fetch(url(p), body===undefined ? {method} : {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    if(!r.ok){ const e = new Error('firebase '+r.status); e.code = (r.status===401||r.status===403)?'permission-denied':'unavailable'; throw e; }
+    return r.json();
+  }
+  const watchers = [];
+  function watch(p, emit, onErr){
+    let last; const w = {p, run: async () => {
+      try{ const v = await req(p,'GET'); const s = JSON.stringify(v); if(s!==last){ last=s; emit(v); } }
+      catch(e){ if(onErr) onErr(e); }
+    }};
+    watchers.push(w); w.run(); setInterval(w.run, POLL_MS);
+  }
+  const refresh = () => watchers.forEach(w => w.run());
+  return {
+    collection(p){ return { onSnapshot(cb, onErr){ watch(p, v => {
+      const docs = Object.entries(v||{}).map(([id,d]) => ({id, data: () => d}));
+      cb({docs, metadata:{hasPendingWrites:false}});
+    }, onErr); } }; },
+    doc(p){ return {
+      set: d => req(p,'PUT',d).then(refresh),
+      update: d => req(p,'PATCH',d).then(refresh),
+      delete: () => req(p,'DELETE').then(refresh),
+      onSnapshot(cb, onErr){ watch(p, v => cb({exists: v!=null, data: () => v}), onErr); }
+    }; }
+  };
+}
 </script>
 <script>
 (function(){
@@ -201,7 +225,7 @@ const FIREBASE_CONFIG = {
     if(!started || (db && !loaded)){ m.innerHTML='<p class="hint">기도표를 불러오는 중이에요…</p>'; return true; }
     if(!db){ m.innerHTML='<div class="notice" style="display:flex;flex-direction:column;gap:8px"><b>기도표를 불러오지 못했어요</b>'+
       '<span>인터넷 연결을 확인하고 다시 불러와 주세요. 계속 안 되면 관리자에게 알려 주세요.</span></div>'+
-      '<button class="btn" id="retryBtn">다시 불러오기</button>'; $('retryBtn').onclick=()=>{ started=false; render(); start(); }; return true; }
+      '<button class="btn" id="retryBtn">다시 불러오기</button>'; $('retryBtn').onclick=()=>location.reload(); return true; }
     return false;
   }
 
@@ -348,11 +372,7 @@ const FIREBASE_CONFIG = {
   setInterval(()=>{ if(todayKey()!==lastDay){ lastDay=todayKey(); render(); } },60000);
 
   async function start(){
-    try{
-      if(!window.firebase) throw new Error('no firebase');
-      const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
-      db = app.firestore();
-    }catch(e){ db=null; }
+    db = makeDb();
     started=true;
     if(!db){ render(); return; }
     db.collection('members').onSnapshot(snap=>{
@@ -364,7 +384,7 @@ const FIREBASE_CONFIG = {
       loaded=true;
       const typing=document.activeElement&&/INPUT/.test(document.activeElement.tagName);
       if(!typing) render();
-    },()=>{ toast('기도표를 불러오지 못했어요'); });
+    },()=>{ if(!loaded){ db=null; render(); } else toast('기도표를 불러오지 못했어요'); });
     db.doc('settings/admin').onSnapshot(d=>{
       const nh=d.exists?(d.data()||{}).hash||null:null;
       if(adminLoaded&&nh!==adminHash&&!isOwner) unlocked=false;
